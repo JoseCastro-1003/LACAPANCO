@@ -9,26 +9,26 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
    <style>
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: #f1f1f1; }
-      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+     ::-webkit-scrollbar { width: 6px; height: 6px; }
+     ::-webkit-scrollbar-track { background: #f1f1f1; }
+     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-      .tab-content { display: none; }
-      .tab-content.active { display: flex; flex-direction: column; height: 100%; }
-      .chart-container { position: relative; height: 250px; width: 100%; }
-      .kanban-col { min-height: 200px; max-height: calc(100vh - 220px); overflow-y: auto; }
+     .tab-content { display: none; }
+     .tab-content.active { display: flex; flex-direction: column; height: 100%; }
+     .chart-container { position: relative; height: 250px; width: 100%; }
+     .kanban-col { min-height: 200px; max-height: calc(100vh - 220px); overflow-y: auto; }
 
         /* Estilo de Árbol */
         details > summary { list-style: none; cursor: pointer; }
         details > summary::-webkit-details-marker { display: none; }
         
         /* Canvas Firma */
-      .firma-canvas { border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 8px; cursor: crosshair; touch-action: none; }
+     .firma-canvas { border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 8px; cursor: crosshair; touch-action: none; }
 
         /* Animación Parpadeo de Stock Bajo */
         .parpadeo-stock { animation: parpadeo 1.5s infinite; }
-      @keyframes parpadeo {
+     @keyframes parpadeo {
             0% { background-color: #fef08a; }
             50% { background-color: transparent; }
             100% { background-color: #fef08a; }
@@ -39,9 +39,9 @@
 
         @media print {
             body * { visibility: hidden; }
-          #print-section, #print-section * { visibility: visible; }
-          #print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white;}
-          .no-print { display: none !important; }
+         #print-section, #print-section * { visibility: visible; }
+         #print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white;}
+         .no-print { display: none !important; }
         }
   </style>
 </head>
@@ -50,10 +50,10 @@
     <!-- NOTIFICACIÓN DE GUARDADO (TOAST) -->
     <div id="toast-save" class="fixed top-4 right-4 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl transition-all duration-500 transform -translate-y-24 opacity-0 z-[300] flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-            <h4 class="font-bold text-sm">Datos Sincronizados</h4>
+           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>
+       <div>
+           <h4 class="font-bold text-sm">Datos Sincronizados</h4>
             <p class="text-[10px] text-emerald-100">Guardado en la nube exitosamente.</p>
         </div>
     </div>
@@ -61,11 +61,11 @@
     <!-- PANTALLA DE LOGIN -->
     <div id="loginOverlay" class="fixed inset-0 login-bg z-[200] flex items-center justify-center p-4">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col items-center">
-          <div class="bg-blue-600 p-4 rounded-full mb-4 shadow-lg"><i data-lucide="shield-check" class="text-white w-10 h-10"></i></div>
+         <div class="bg-blue-600 p-4 rounded-full mb-4 shadow-lg"><i data-lucide="shield-check" class="text-white w-10 h-10"></i></div>
           <h1 class="text-2xl font-black text-slate-800 tracking-wider text-center">LACAPANCO</h1>
            <p class="text-xs text-slate-500 font-bold mb-6 text-center">CMMS & SCADA v9.4</p>
             
-          <form id="loginForm" class="w-full space-y-4" onsubmit="procesarLogin(event)">
+         <form id="loginForm" class="w-full space-y-4" onsubmit="procesarLogin(event)">
               <div>
                   <label class="block text-xs font-bold text-gray-600 mb-1">Usuario</label>
                   <div class="relative">
@@ -144,8 +144,8 @@
 
         <div class="flex-1 overflow-y-auto p-4 md:p-6 w-full">
             
-          <!-- 1. DASHBOARD COMPLETO -->
-          <div id="tab-dashboard" class="tab-content active space-y-4">
+         <!-- 1. DASHBOARD COMPLETO -->
+         <div id="tab-dashboard" class="tab-content active space-y-4">
                 
                <!-- KPIs Top Bar -->
                <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -263,7 +263,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="scada-container"></div>
            </div>
 
-           <!-- 3. ÁRBOL EQUIPOS -->
+          <!-- 3. ÁRBOL EQUIPOS -->
           <div id="tab-equipos" class="tab-content h-full">
             <div class="flex justify-between items-center mb-4">
                 <p class="text-gray-500">Estructura jerárquica de la planta.</p>
@@ -318,8 +318,8 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2"><i data-lucide="calendar-days"></i> Calendario</h3>
                     <div class="flex gap-2">
-                         <select id="cal-month" class="border p-2 rounded shadow-sm font-bold text-gray-700" onchange="renderCalendario()"></select>
-                         <select id="cal-year" class="border p-2 rounded shadow-sm font-bold text-gray-700" onchange="renderCalendario()"></select>
+                        <select id="cal-month" class="border p-2 rounded shadow-sm font-bold text-gray-700" onchange="renderCalendario()"></select>
+                        <select id="cal-year" class="border p-2 rounded shadow-sm font-bold text-gray-700" onchange="renderCalendario()"></select>
                     </div>
                 </div>
                 <div class="grid grid-cols-7 gap-px bg-gray-300 border border-gray-300 rounded-lg overflow-hidden flex-1" id="cal-grid"></div>
@@ -341,17 +341,17 @@
             <div class="bg-white rounded-lg shadow overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table class="w-full text-left border-collapse relative">
                     <thead class="bg-slate-100 border-b sticky top-0 z-10 shadow-sm">
-                         <tr>
-                             <th class="p-3 text-xs text-center w-12"><i data-lucide="image" class="w-4 h-4 mx-auto text-gray-400"></i></th>
-                             <th class="p-3 text-xs">Código</th>
-                             <th class="p-3 text-xs">Nombre</th>
-                             <th class="p-3 text-xs">Tipo</th>
-                             <th class="p-3 text-xs">Equipo Asociado</th>
-                             <th class="p-3 text-xs text-center">Stock</th>
-                             <th class="p-3 text-xs text-center">Min</th>
-                             <th class="p-3 text-xs text-center">Comprar</th>
-                             <th class="p-3 text-xs text-center">Acciones</th>
-                         </tr>
+                        <tr>
+                            <th class="p-3 text-xs text-center w-12"><i data-lucide="image" class="w-4 h-4 mx-auto text-gray-400"></i></th>
+                            <th class="p-3 text-xs">Código</th>
+                            <th class="p-3 text-xs">Nombre</th>
+                            <th class="p-3 text-xs">Tipo</th>
+                            <th class="p-3 text-xs">Equipo Asociado</th>
+                            <th class="p-3 text-xs text-center">Stock</th>
+                            <th class="p-3 text-xs text-center">Min</th>
+                            <th class="p-3 text-xs text-center">Comprar</th>
+                            <th class="p-3 text-xs text-center">Acciones</th>
+                        </tr>
                    </thead>
                     <tbody id="inventario-tbody" class="divide-y text-sm"></tbody>
                 </table>
@@ -389,43 +389,43 @@
                       <div class="flex bg-white rounded-lg border border-gray-300 shadow-sm p-1">
                           <div class="flex items-center pl-2 pr-1 text-gray-500"><i data-lucide="calendar" class="w-4 h-4"></i></div>
                         <select id="filter-costos-year" class="bg-transparent border-none outline-none text-sm font-bold text-gray-700 cursor-pointer" onchange="renderCostos()">
-                           <option value="">Todos los años</option>
-                           <option value="2024">2024</option>
-                           <option value="2025">2025</option>
-                           <option value="2026">2026</option>
-                        </select>
+                          <option value="">Todos los años</option>
+                          <option value="2024">2024</option>
+                          <option value="2025">2025</option>
+                          <option value="2026">2026</option>
+                       </select>
                           <div class="border-l mx-1 border-gray-300"></div>
                         <select id="filter-costos-month" class="bg-transparent border-none outline-none text-sm font-bold text-gray-700 cursor-pointer pr-2" onchange="renderCostos()">
-                           <option value="">Mes</option>
-                           <option value="01">Ene</option>
-                           <option value="02">Feb</option>
-                           <option value="03">Mar</option>
-                           <option value="04">Abr</option>
-                           <option value="05">May</option>
-                           <option value="06">Jun</option>
-                           <option value="07">Jul</option>
-                           <option value="08">Ago</option>
-                           <option value="09">Sep</option>
-                           <option value="10">Oct</option>
-                           <option value="11">Nov</option>
-                           <option value="12">Dic</option>
-                        </select>
+                          <option value="">Mes</option>
+                          <option value="01">Ene</option>
+                          <option value="02">Feb</option>
+                          <option value="03">Mar</option>
+                          <option value="04">Abr</option>
+                          <option value="05">May</option>
+                          <option value="06">Jun</option>
+                          <option value="07">Jul</option>
+                          <option value="08">Ago</option>
+                          <option value="09">Sep</option>
+                          <option value="10">Oct</option>
+                          <option value="11">Nov</option>
+                          <option value="12">Dic</option>
+                       </select>
                     </div>
                 </div>
                 <div class="overflow-y-auto max-h-[400px] p-0">
                       <table class="w-full text-left border-collapse">
                          <thead class="bg-slate-100 border-b text-xs text-gray-600 sticky top-0 shadow-sm z-10">
-                            <tr>
-                                <th class="p-3">Fecha</th>
-                                <th class="p-3">ID OT / Tipo</th>
-                                <th class="p-3">Equipo</th>
-                                <th class="p-3">Responsable (M.O)</th>
-                                <th class="p-3 text-right">Costo Repuestos</th>
-                                <th class="p-3 text-right">Costo Base Prev.</th>
-                                <th class="p-3 text-right">Costo M.O</th>
-                                <th class="p-3 text-right font-bold text-blue-700">Total OT</th>
-                            </tr>
-                        </thead>
+                           <tr>
+                               <th class="p-3">Fecha</th>
+                               <th class="p-3">ID OT / Tipo</th>
+                               <th class="p-3">Equipo</th>
+                               <th class="p-3">Responsable (M.O)</th>
+                               <th class="p-3 text-right">Costo Repuestos</th>
+                               <th class="p-3 text-right">Costo Base Prev.</th>
+                               <th class="p-3 text-right">Costo M.O</th>
+                               <th class="p-3 text-right font-bold text-blue-700">Total OT</th>
+                           </tr>
+                       </thead>
                          <tbody id="costos-mo-tbody" class="divide-y text-sm"></tbody>
                     </table>
                   </div>
@@ -437,29 +437,29 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     
                     <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 hover:shadow-md transition">
-                          <h4 class="font-black text-blue-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="bar-chart-3" class="w-6 h-6 text-blue-600"></i> 1. ¿Cómo se mide la efectividad y eficiencia del mantenimiento?</h4>
+                          <h4 class="font-bold text-blue-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="bar-chart-3" class="w-6 h-6 text-blue-600"></i> 1. ¿Cómo se mide la efectividad y eficiencia del mantenimiento?</h4>
                           <p class="text-sm text-gray-700 text-justify leading-relaxed">
                               La efectividad se mide mediante el cumplimiento de los Planes Preventivos (reducir el backlog o atrasos) y el <strong>OEE</strong> (Overall Equipment Effectiveness). La eficiencia se evalúa mediante KPIs como el <strong>MTBF</strong> (Tiempo Medio Entre Fallas - mientras más alto, mejor) y el <strong>MTTR</strong> (Tiempo Medio de Reparación - mientras más bajo, mejor), indicando qué tan rápido el equipo de LACAPANCO resuelve los problemas y previene futuras paradas.
                         </p>
                     </div>
 
                     <div class="bg-emerald-50 p-5 rounded-xl border border-emerald-100 hover:shadow-md transition">
-                          <h4 class="font-black text-emerald-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="coins" class="w-6 h-6 text-emerald-600"></i> 2. ¿Por qué se analiza el costo asociado al mantenimiento?</h4>
+                          <h4 class="font-bold text-emerald-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="coins" class="w-6 h-6 text-emerald-600"></i> 2. ¿Por qué se analiza el costo asociado al mantenimiento?</h4>
                           <p class="text-sm text-gray-700 text-justify leading-relaxed">
                               El análisis de costos (Repuestos + Mano de Obra + Paradas) permite determinar la rentabilidad del ciclo de vida de un equipo. Si el costo acumulado de mantenimiento correctivo supera el costo de reemplazo, justifica una nueva inversión. Además, permite optimizar el presupuesto anual, garantizando que el inventario no tenga sobrestock ni desabastecimiento de repuestos críticos.
                         </p>
                     </div>
 
                     <div class="bg-indigo-50 p-5 rounded-xl border border-indigo-100 hover:shadow-md transition">
-                          <h4 class="font-black text-indigo-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="shield-check" class="w-6 h-6 text-indigo-600"></i> 3. Evaluación de la confiabilidad y disponibilidad</h4>
+                          <h4 class="font-bold text-indigo-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="shield-check" class="w-6 h-6 text-indigo-600"></i> 3. Evaluación de la confiabilidad y disponibilidad</h4>
                           <p class="text-sm text-gray-700 text-justify leading-relaxed">
-                         <strong>Disponibilidad:</strong> Es el porcentaje de tiempo que un equipo está listo para operar sobre el tiempo total planificado de producción. <br><br>
-                         <strong>Confiabilidad:</strong> Es la probabilidad de que el equipo funcione sin fallar durante un periodo específico. Un equipo puede tener alta disponibilidad (se repara rápido) pero baja confiabilidad (falla muchas veces). Ambas se garantizan ejecutando las OTs a tiempo.
+                        <strong>Disponibilidad:</strong> Es el porcentaje de tiempo que un equipo está listo para operar sobre el tiempo total planificado de producción. <br><br>
+                        <strong>Confiabilidad:</strong> Es la probabilidad de que el equipo funcione sin fallar durante un periodo específico. Un equipo puede tener alta disponibilidad (se repara rápido) pero baja confiabilidad (falla muchas veces). Ambas se garantizan ejecutando las OTs a tiempo.
                         </p>
                       </div>
 
                       <div class="bg-purple-50 p-5 rounded-xl border border-purple-100 hover:shadow-md transition">
-                          <h4 class="font-black text-purple-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="pie-chart" class="w-6 h-6 text-purple-600"></i> 4. Herramientas para la interpretación de indicadores</h4>
+                          <h4 class="font-bold text-purple-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="pie-chart" class="w-6 h-6 text-purple-600"></i> 4. Herramientas para la interpretación de indicadores</h4>
                           <p class="text-sm text-gray-700 text-justify leading-relaxed">
                               En LACAPANCO utilizamos <strong>Dashboards en tiempo real</strong> para visualizar tendencias y cuellos de botella. El <strong>Gráfico de Dona de OTs</strong> actúa como un diagrama de estados (Kanban). El gráfico de <strong>Planificadas vs Correctivas</strong> (Ideal: 80% Prev / 20% Corr) permite interpretar la proactividad del departamento. SCADA provee la herramienta física de comportamiento de variables frente a estos indicadores.
                         </p>
@@ -526,7 +526,7 @@
              <div>
                  <label class="block text-xs font-bold text-gray-600">Área (Solo las oficiales)</label>
                  <select id="eq-area" required class="w-full border p-2 rounded font-bold text-blue-800">
-                  <option>Panes y Dulces</option><option>Latas</option><option>Carnes</option><option>Congelados</option>
+                 <option>Panes y Dulces</option><option>Latas</option><option>Carnes</option><option>Congelados</option>
                  </select>
              </div>
              <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold">Guardar Equipo</button>
@@ -700,21 +700,21 @@
                      
                      <div class="flex gap-2 items-end mb-4">
                          <div class="flex-1">
-                          <label class="text-xs font-bold text-gray-600">Insumo</label>
-                          <select id="univ-insumo-sel" class="w-full border p-2 rounded bg-white text-sm"></select>
-                         </div>
+                         <label class="text-xs font-bold text-gray-600">Insumo</label>
+                         <select id="univ-insumo-sel" class="w-full border p-2 rounded bg-white text-sm"></select>
+                        </div>
                          <div class="w-24">
-                          <label class="text-xs font-bold text-gray-600">Cant.</label>
-                          <input type="number" id="univ-insumo-cant" class="w-full border p-2 rounded bg-white text-sm text-center" min="1" value="1">
-                         </div>
+                         <label class="text-xs font-bold text-gray-600">Cant.</label>
+                         <input type="number" id="univ-insumo-cant" class="w-full border p-2 rounded bg-white text-sm text-center" min="1" value="1">
+                        </div>
                        <button type="button" onclick="addInsumoSanidad()" class="bg-teal-500 text-white px-4 py-2 rounded font-bold text-sm hover:bg-teal-600">Añadir</button>
                     </div>
 
                     <div class="bg-white rounded border overflow-hidden">
                          <table class="w-full text-left text-xs">
-                          <thead class="bg-gray-100 border-b"><tr><th class="p-2">Insumo</th><th class="p-2 text-center">Cant</th><th class="p-2 text-right">Costo Unit.</th><th class="p-2 text-center">Quitar</th></tr></thead>
-                          <tbody id="univ-insumos-list" class="divide-y"></tbody>
-                         </table>
+                         <thead class="bg-gray-100 border-b"><tr><th class="p-2">Insumo</th><th class="p-2 text-center">Cant</th><th class="p-2 text-right">Costo Unit.</th><th class="p-2 text-center">Quitar</th></tr></thead>
+                         <tbody id="univ-insumos-list" class="divide-y"></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -788,29 +788,29 @@
                      
                       <div class="flex gap-2 items-end mb-4">
                           <div class="flex-1">
-                           <label class="text-xs font-bold text-gray-600">Artículo</label>
-                           <select id="ejec-repuesto-sel" class="w-full border p-2 rounded bg-white text-sm"></select>
-                          </div>
+                          <label class="text-xs font-bold text-gray-600">Artículo</label>
+                          <select id="ejec-repuesto-sel" class="w-full border p-2 rounded bg-white text-sm"></select>
+                         </div>
                           <div class="w-24">
-                           <label class="text-xs font-bold text-gray-600">Cant.</label>
-                           <input type="number" id="ejec-repuesto-cant" class="w-full border p-2 rounded bg-white text-sm text-center" min="1" value="1">
-                          </div>
+                          <label class="text-xs font-bold text-gray-600">Cant.</label>
+                          <input type="number" id="ejec-repuesto-cant" class="w-full border p-2 rounded bg-white text-sm text-center" min="1" value="1">
+                         </div>
                         <button type="button" onclick="addRepuestoToEjec()" class="bg-orange-500 text-white px-4 py-2 rounded font-bold text-sm hover:bg-orange-600">Añadir</button>
                     </div>
 
                     <div class="bg-white rounded border overflow-hidden">
                          <table class="w-full text-left text-xs">
-                           <thead class="bg-gray-100 border-b"><tr><th class="p-2">Artículo</th><th class="p-2 text-center">Cant</th><th class="p-2 text-right">Costo Unit.</th><th class="p-2 text-center">Quitar</th></tr></thead>
-                           <tbody id="ejec-repuestos-list" class="divide-y"></tbody>
-                       </table>
+                          <thead class="bg-gray-100 border-b"><tr><th class="p-2">Artículo</th><th class="p-2 text-center">Cant</th><th class="p-2 text-right">Costo Unit.</th><th class="p-2 text-center">Quitar</th></tr></thead>
+                          <tbody id="ejec-repuestos-list" class="divide-y"></tbody>
+                      </table>
                     </div>
                 </div>
 
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
                     <label class="block font-bold text-gray-700 mb-2">Firma del Técnico (Obligatorio)</label>
                     <div class="h-40 w-full max-w-md firma-canvas relative mx-auto bg-white">
-                         <canvas id="canvasFirmaTecnico" class="w-full h-full"></canvas>
-                         <button type="button" onclick="limpiarFirma()" class="absolute bottom-2 right-2 text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded font-bold">Borrar Firma</button>
+                        <canvas id="canvasFirmaTecnico" class="w-full h-full"></canvas>
+                        <button type="button" onclick="limpiarFirma()" class="absolute bottom-2 right-2 text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded font-bold">Borrar Firma</button>
                     </div>
                 </div>
             </form>
@@ -864,10 +864,10 @@
                for(let mes = 1; mes <= mesMax; mes++) {
                    let mesStr = String(mes).padStart(2, '0');
 
-                 equipos.forEach(eq => {
+                equipos.forEach(eq => {
                        let dia = Math.floor(Math.random() * 28) + 1;
                        let fecha = `${anio}-${mesStr}-${String(dia).padStart(2,'0')}`;
-                    historicas.push({
+                   historicas.push({
                             id: `OT-${otCounter++}`,
                             tipo: 'Preventivo',
                          equipoId: eq,
@@ -877,9 +877,9 @@
                             fecha: fecha,
                          estado: 'finalizadas',
                         tiempo: 1.5 + (Math.random()), 
-                        observacionesMant: 'Revisión completada sin anomalías destacables.',
+                       observacionesMant: 'Revisión completada sin anomalías destacables.',
                         repuestos: [],
-                        costoTotal: 50 + Math.random() * 30
+                       costoTotal: 50 + Math.random() * 30
                         });
                    });
 
@@ -887,7 +887,7 @@
                        let eq = equipos[Math.floor(Math.random()*equipos.length)];
                        let dia = Math.floor(Math.random() * 28) + 1;
                        let fallaDesc = ['Atasco de producto', 'Fallo de motor/eléctrico', 'Ajuste de rodamientos', 'Fuga hidráulica/neumática'][Math.floor(Math.random()*4)];
-                     historicas.push({
+                    historicas.push({
                             id: `OT-${otCounter++}`,
                             tipo: 'Correctivo',
                          equipoId: eq,
@@ -897,9 +897,9 @@
                             fecha: `${anio}-${mesStr}-${String(dia).padStart(2,'0')}`,
                          estado: 'finalizadas',
                         tiempo: 2 + (Math.random() * 3), 
-                        observacionesMant: 'Se detuvo la producción para reemplazo de componente averiado.',
+                       observacionesMant: 'Se detuvo la producción para reemplazo de componente averiado.',
                         repuestos: [{id: "LUB-01", cant: 1, nombre: "Grasa", costoUnitario: 180}],
-                         costoTotal: 180 + (4*6) + Math.random() * 50
+                        costoTotal: 180 + (4*6) + Math.random() * 50
                        });
                    }
                }
@@ -1014,7 +1014,7 @@
         window.appDB = db; // Exponemos para primera subida si está vacío
 
         // Se ejecuta cuando Firebase trae la data desde la nube
-        window.actualizarDesdeFirebase = function(datosFirebase) {
+       window.actualizarDesdeFirebase = function(datosFirebase) {
             if(datosFirebase && datosFirebase.version) {
                 db = datosFirebase;
                 refreshUI();
@@ -1025,19 +1025,19 @@
         function saveDB() {
             refreshUI(); 
             // NUEVO: Enviar la info a la nube directamente
-            if(window.sincronizarConFirebase) {
-                window.sincronizarConFirebase(db);
+           if(window.sincronizarConFirebase) {
+               window.sincronizarConFirebase(db);
             }
         }
 
-        window.mostrarToastGuardado = function() {
+       window.mostrarToastGuardado = function() {
             const toast = document.getElementById('toast-save');
             if(!toast) return;
-            toast.classList.remove('-translate-y-24', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
+           toast.classList.remove('-translate-y-24', 'opacity-0');
+           toast.classList.add('translate-y-0', 'opacity-100');
             setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('-translate-y-24', 'opacity-0');
+               toast.classList.remove('translate-y-0', 'opacity-100');
+               toast.classList.add('-translate-y-24', 'opacity-0');
             }, 2500);
         };
 
@@ -1050,31 +1050,31 @@
            const sessionUser = sessionStorage.getItem('lacapanco_user');
            if(sessionUser) {
                currentUser = JSON.parse(sessionUser);
-             document.getElementById('loginOverlay').classList.add('hidden');
-             document.getElementById('hdr-user-name').innerText = currentUser.nombre;
-             document.getElementById('hdr-user-rol').innerText = currentUser.dpto;
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('hdr-user-name').innerText = currentUser.nombre;
+            document.getElementById('hdr-user-rol').innerText = currentUser.dpto;
                
                 // Cargar imagen de usuario logueado
                 const userDb = db.personal.find(p => p.id === currentUser.personalId);
                 if(userDb && userDb.img) {
-                 document.getElementById('hdr-user-img').src = userDb.img;
-                  document.getElementById('hdr-user-img').classList.remove('hidden');
-                 document.getElementById('hdr-user-icon').classList.add('hidden');
+                document.getElementById('hdr-user-img').src = userDb.img;
+                 document.getElementById('hdr-user-img').classList.remove('hidden');
+                document.getElementById('hdr-user-icon').classList.add('hidden');
                 } else {
-                 document.getElementById('hdr-user-img').classList.add('hidden');
-                 document.getElementById('hdr-user-icon').classList.remove('hidden');
+                document.getElementById('hdr-user-img').classList.add('hidden');
+                document.getElementById('hdr-user-icon').classList.remove('hidden');
                 }
 
                 // Cargar logo empresa
                 if(db.config.logo) {
-                 document.getElementById('custom-logo').src = db.config.logo;
-                 document.getElementById('custom-logo').classList.remove('hidden');
-                 document.getElementById('default-logo').classList.add('hidden');
+                document.getElementById('custom-logo').src = db.config.logo;
+                document.getElementById('custom-logo').classList.remove('hidden');
+                document.getElementById('default-logo').classList.add('hidden');
                 }
 
                refreshUI();
            } else {
-             document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('loginOverlay').classList.remove('hidden');
            }
         }
 
@@ -1086,69 +1086,100 @@
             
             if(validUser) {
                 currentUser = validUser;
-             sessionStorage.setItem('lacapanco_user', JSON.stringify(validUser));
-             document.getElementById('loginOverlay').classList.add('hidden');
-             document.getElementById('loginForm').reset();
-             document.getElementById('loginError').classList.add('hidden');
+            sessionStorage.setItem('lacapanco_user', JSON.stringify(validUser));
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').classList.add('hidden');
                
-             document.getElementById('exito-titulo').innerText = "¡Bienvenid@!";
-             document.getElementById('exito-msg').innerText = `¡Bienvenid@ ${currentUser.nombre}, ${currentUser.rol}. Que tenga un día productivo!`;
-             document.getElementById('modalExito').classList.remove('hidden');
-             document.getElementById('modalExito').classList.add('flex');
+            document.getElementById('exito-titulo').innerText = "¡Bienvenid@!";
+            document.getElementById('exito-msg').innerText = `¡Bienvenid@ ${currentUser.nombre}, ${currentUser.rol}. Que tenga un día productivo!`;
+            document.getElementById('modalExito').classList.remove('hidden');
+            document.getElementById('modalExito').classList.add('flex');
                
                 checkAuth();
             } else {
                 const errEl = document.getElementById('loginError');
                 errEl.innerText = "Usuario o contraseña incorrectos.";
-             errEl.classList.remove('hidden');
+            errEl.classList.remove('hidden');
                 setTimeout(() => errEl.classList.add('hidden'), 3500);
             }
         }
 
         function cerrarSesion() {
            if(confirm("¿Estás seguro de que deseas salir de la sesión?")) {
-             sessionStorage.removeItem('lacapanco_user');
+            sessionStorage.removeItem('lacapanco_user');
                 currentUser = null;
-             document.getElementById('loginForm').reset();
-             document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginOverlay').classList.remove('hidden');
            }
         }
 
         function checkPermission(requiredDpto) {
             if(!currentUser) return false;
-         if(currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor')) return true;
+        if(currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor')) return true;
             return currentUser.dpto === requiredDpto;
         }
 
         setInterval(() => { const d = new Date(); document.getElementById('clock').innerText = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'}); }, 1000);
 
         function mostrarAlerta(msg) {
-         document.getElementById('alerta-msg').innerText = msg;
-         document.getElementById('modalAlerta').classList.remove('hidden');
-         document.getElementById('modalAlerta').classList.add('flex');
+        document.getElementById('alerta-msg').innerText = msg;
+        document.getElementById('modalAlerta').classList.remove('hidden');
+        document.getElementById('modalAlerta').classList.add('flex');
         }
 
+        // ====== FUNCIÓN COMPRESORA DE IMÁGENES (EVITA LÍMITE 1MB FIREBASE) ======
         function convertirImagen(evt, targetId, previewImgId = null, previewIconId = null) {
            const file = evt.target.files[0];
            if (file) {
              const reader = new FileReader();
              reader.onload = function(e) {
-             document.getElementById(targetId).value = e.target.result;
-                 if (previewImgId) {
-                     const img = document.getElementById(previewImgId);
-                     img.src = e.target.result;
-                  img.classList.remove('hidden');
-                  if(previewIconId) document.getElementById(previewIconId).classList.add('hidden');
-                 }
+                 const img = new Image();
+                 img.onload = function() {
+                     const canvas = document.createElement('canvas');
+                     let width = img.width;
+                     let height = img.height;
+                     const MAX_SIZE = 400; // Máximo 400px para comprimir peso
+                     
+                     if (width > height) {
+                         if (width > MAX_SIZE) {
+                             height *= MAX_SIZE / width;
+                             width = MAX_SIZE;
+                         }
+                     } else {
+                         if (height > MAX_SIZE) {
+                             width *= MAX_SIZE / height;
+                             height = MAX_SIZE;
+                         }
+                     }
+                     
+                     canvas.width = width;
+                     canvas.height = height;
+                     const ctx = canvas.getContext('2d');
+                     ctx.drawImage(img, 0, 0, width, height);
+                     
+                     // Convierte y comprime la imagen a JPG en calidad 0.7 para asegurar menos de 50kb
+                     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                     
+                     document.getElementById(targetId).value = dataUrl;
+                     
+                     if (previewImgId) {
+                         const preview = document.getElementById(previewImgId);
+                         preview.src = dataUrl;
+                         preview.classList.remove('hidden');
+                         if(previewIconId) document.getElementById(previewIconId).classList.add('hidden');
+                     }
+                 };
+                 img.src = e.target.result;
              };
-          reader.readAsDataURL(file);
+         reader.readAsDataURL(file);
            }
         }
 
-        // Cambio de Logo
+        // ====== COMPRESORA DE IMÁGENES LOGO ======
         function cambiarLogo() {
             if(currentUser && currentUser.rol.includes('Administrador')) {
-             document.getElementById('logo-file').click();
+            document.getElementById('logo-file').click();
             }
         }
         function guardarLogo(event) {
@@ -1156,13 +1187,33 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                   db.config.logo = e.target.result;
-                   saveDB();
-                 document.getElementById('custom-logo').src = db.config.logo;
-                 document.getElementById('custom-logo').classList.remove('hidden');
-                 document.getElementById('default-logo').classList.add('hidden');
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_SIZE = 300; 
+                        
+                        if (width > height) {
+                            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                        } else {
+                            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        db.config.logo = canvas.toDataURL('image/jpeg', 0.8);
+                        saveDB();
+                        document.getElementById('custom-logo').src = db.config.logo;
+                        document.getElementById('custom-logo').classList.remove('hidden');
+                        document.getElementById('default-logo').classList.add('hidden');
+                    };
+                    img.src = e.target.result;
                 };
-             reader.readAsDataURL(file);
+            reader.readAsDataURL(file);
             }
         }
 
@@ -1171,13 +1222,13 @@
         // ==========================================
         function switchTab(tabId) {
          if(!currentUser) { checkAuth(); return; }
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById('tab-' + tabId).classList.add('active');
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active', 'bg-slate-800'));
+     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+     document.getElementById('tab-' + tabId).classList.add('active');
+     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active', 'bg-slate-800'));
          const btn = document.querySelector(`.nav-btn[data-target="${tabId}"]`);
          if(btn) btn.classList.add('active', 'bg-slate-800');
          const titles = { dashboard: 'Dashboard Operativo (KPIs Generales)', scada: 'Planta y SCADA en Vivo', equipos: 'Árbol Jerárquico de Equipos', checklists: 'Planes de Trabajo Estandarizados', ots: 'Kanban Operativo', calendario: 'Calendario Mensual', inventario: 'Inventario Completo', cotizaciones: 'Gestión de Compras', costos: 'Análisis Financiero y Estratégico', rrhh: 'Personal de Planta' };
-      document.getElementById('top-title').innerText = titles[tabId];
+     document.getElementById('top-title').innerText = titles[tabId];
          refreshUI();
          if(tabId === 'calendario') initCalendarioSelects();
         }
@@ -1210,16 +1261,16 @@
          const eqOpts = db.equipos.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
          const perOptsMant = db.personal.filter(p=>p.dpto==='Mantenimiento').map(p => `<option value="${p.id}">${p.nombre} (${p.rol})</option>`).join('');
          
-      if(document.getElementById('rep-equipo')) document.getElementById('rep-equipo').innerHTML = `<option value="">Ninguno / Uso General</option>` + eqOpts;
-      if(document.getElementById('filter-inv-eq')) document.getElementById('filter-inv-eq').innerHTML = `<option value="">Todos los equipos</option>` + eqOpts;
-      if(document.getElementById('ot-equipo')) document.getElementById('ot-equipo').innerHTML = `<option value="">Seleccione Equipo...</option>` + eqOpts;
-      if(document.getElementById('par-equipo')) document.getElementById('par-equipo').innerHTML = `<option value="">Seleccione Equipo...</option>` + eqOpts;
+     if(document.getElementById('rep-equipo')) document.getElementById('rep-equipo').innerHTML = `<option value="">Ninguno / Uso General</option>` + eqOpts;
+     if(document.getElementById('filter-inv-eq')) document.getElementById('filter-inv-eq').innerHTML = `<option value="">Todos los equipos</option>` + eqOpts;
+     if(document.getElementById('ot-equipo')) document.getElementById('ot-equipo').innerHTML = `<option value="">Seleccione Equipo...</option>` + eqOpts;
+     if(document.getElementById('par-equipo')) document.getElementById('par-equipo').innerHTML = `<option value="">Seleccione Equipo...</option>` + eqOpts;
          
-      if(document.getElementById('ot-tecnico')) document.getElementById('ot-tecnico').innerHTML = perOptsMant;
+     if(document.getElementById('ot-tecnico')) document.getElementById('ot-tecnico').innerHTML = perOptsMant;
          
-      if(document.getElementById('filter-compra-eq')) document.getElementById('filter-compra-eq').innerHTML = `<option value="">Todos los equipos</option>` + eqOpts;
-      if(document.getElementById('comp-equipo-filter')) document.getElementById('comp-equipo-filter').innerHTML = `<option value="">(Todos) Seleccione Equipo...</option>` + eqOpts;
-      if(document.getElementById('bld-equipo')) document.getElementById('bld-equipo').innerHTML = eqOpts;
+     if(document.getElementById('filter-compra-eq')) document.getElementById('filter-compra-eq').innerHTML = `<option value="">Todos los equipos</option>` + eqOpts;
+     if(document.getElementById('comp-equipo-filter')) document.getElementById('comp-equipo-filter').innerHTML = `<option value="">(Todos) Seleccione Equipo...</option>` + eqOpts;
+     if(document.getElementById('bld-equipo')) document.getElementById('bld-equipo').innerHTML = eqOpts;
         }
 
         function filtrarPersonalFalla() {
@@ -1247,16 +1298,16 @@
          const mtbf = correctivasArr.length > 0 ? Math.round(720 / correctivasArr.length) : 720;
          const mttr = correctivasArr.length > 0 ? (correctivasArr.reduce((a,b)=>a+(b.tiempo||1),0)/correctivasArr.length).toFixed(1) : 0;
 
-      document.getElementById('kpi-ots-comp').innerText = compArr.length;
-      document.getElementById('kpi-ots-open').innerText = openArr.length;
-      document.getElementById('kpi-ots-atrasadas').innerText = atrasadasArr.length;
-      document.getElementById('kpi-stock').innerText = lowStockArr.length;
-      if(document.getElementById('kpi-eq-on')) document.getElementById('kpi-eq-on').innerText = eqOn;
-      if(document.getElementById('kpi-eq-off')) document.getElementById('kpi-eq-off').innerText = db.equipos.length - eqOn;
-      if(document.getElementById('kpi-ots-canc')) document.getElementById('kpi-ots-canc').innerText = db.ots_canceladas.length;
-      if(document.getElementById('kpi-disp')) document.getElementById('kpi-disp').innerText = disp + "%";
-      if(document.getElementById('kpi-mtbf')) document.getElementById('kpi-mtbf').innerText = mtbf + "h";
-      if(document.getElementById('kpi-mttr')) document.getElementById('kpi-mttr').innerText = mttr + "h";
+     document.getElementById('kpi-ots-comp').innerText = compArr.length;
+     document.getElementById('kpi-ots-open').innerText = openArr.length;
+     document.getElementById('kpi-ots-atrasadas').innerText = atrasadasArr.length;
+     document.getElementById('kpi-stock').innerText = lowStockArr.length;
+     if(document.getElementById('kpi-eq-on')) document.getElementById('kpi-eq-on').innerText = eqOn;
+     if(document.getElementById('kpi-eq-off')) document.getElementById('kpi-eq-off').innerText = db.equipos.length - eqOn;
+     if(document.getElementById('kpi-ots-canc')) document.getElementById('kpi-ots-canc').innerText = db.ots_canceladas.length;
+     if(document.getElementById('kpi-disp')) document.getElementById('kpi-disp').innerText = disp + "%";
+     if(document.getElementById('kpi-mtbf')) document.getElementById('kpi-mtbf').innerText = mtbf + "h";
+     if(document.getElementById('kpi-mttr')) document.getElementById('kpi-mttr').innerText = mttr + "h";
 
          // Poblar listas
          const divAb = document.getElementById('dash-list-abiertas');
@@ -1277,7 +1328,7 @@
          // Alertas de Cancelación
          const alertsBox = document.getElementById('dashboard-alerts');
          alertsBox.innerHTML = '';
-      db.ots_canceladas.slice(-5).forEach(c => {
+     db.ots_canceladas.slice(-5).forEach(c => {
              alertsBox.innerHTML += `<div class="text-xs bg-purple-50 text-purple-800 border-l-4 border-l-purple-500 p-2 rounded shadow-sm mb-1"><strong>Cancelada:</strong> ${c.otDesc} <br><span class="text-gray-500">Motivo: ${c.motivo}</span></div>`;
          });
       if(alertsBox.innerHTML==='') alertsBox.innerHTML = `<p class="text-xs text-gray-400 p-2 text-center">No hay cancelaciones recientes.</p>`;
@@ -1285,7 +1336,7 @@
          // Tablón Interdepartamental (Automático con currentUser)
          const commsBox = document.getElementById('dash-comms');
          commsBox.innerHTML = '';
-      db.notas_comms.slice().reverse().forEach(n => {
+     db.notas_comms.slice().reverse().forEach(n => {
              let dptoFallback = n.dpto || n.autor;
              let autorNombre = n.dpto ? n.autor : 'Usuario Viejo';
              let colorClass = dptoFallback === 'Mantenimiento' ? 'text-blue-800 bg-blue-50 border-blue-100' : (dptoFallback === 'Sanidad' ? 'text-teal-800 bg-teal-50 border-teal-100' : (dptoFallback === 'Administración' ? 'text-slate-800 bg-slate-100 border-slate-200' : 'text-indigo-800 bg-indigo-50 border-indigo-100'));
@@ -1314,7 +1365,7 @@
            const txt = document.getElementById('nueva-nota-comm').value;
            if(!txt) return;
            db.notas_comms.push({ id: 'N'+Date.now(), fecha: new Date().toISOString().split('T')[0], autor: currentUser.nombre, dpto: currentUser.dpto, texto: txt });
-        document.getElementById('nueva-nota-comm').value = '';
+       document.getElementById('nueva-nota-comm').value = '';
            saveDB();
         }
 
@@ -1383,7 +1434,7 @@
                  <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-200 ml-6 mb-2 hover:border-blue-300">
                      <div class="flex items-center gap-2">${iconHtml}<span class="font-bold text-gray-700">${eq.nombre}</span> <span class="text-[9px] bg-blue-100 text-blue-800 px-1 rounded">${eq.id}</span></div>
                      <div class="flex gap-2"><button onclick="editarElemento('equipo', '${eq.id}')" class="text-blue-500 hover:bg-blue-100 p-1.5 rounded"><i data-lucide="edit" class="w-4 h-4"></i></button><button onclick="eliminarElemento('equipo', '${eq.id}')" class="text-red-500 hover:bg-red-100 p-1.5 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
-             </div>`}).join('');
+            </div>`}).join('');
                
              cont.innerHTML += `
                  <details open class="mb-4">
@@ -1424,7 +1475,7 @@
              const card = `
                  <div class="bg-white p-3 rounded shadow-sm border border-gray-200 relative group text-xs hover:border-blue-400 transition mt-2">
                    ${atrasadoHTML}
-                 ${ot.estado!=='finalizadas' ? `<button onclick="prepararCancelacionOT('${ot.id}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 hidden group-hover:block z-10"><i data-lucide="x-circle" class="w-4 h-4"></i></button>`:''}
+                ${ot.estado!=='finalizadas' ? `<button onclick="prepararCancelacionOT('${ot.id}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 hidden group-hover:block z-10"><i data-lucide="x-circle" class="w-4 h-4"></i></button>`:''}
                      <div class="flex justify-between mb-2"><span class="font-bold text-gray-400">${ot.id}</span><span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${badge}">${ot.tipo}</span></div>
                      <p class="font-bold text-gray-800 leading-tight mb-2 pr-4">${ot.desc}</p>
                      <p class="text-[10px] text-gray-500 mb-2 truncate bg-gray-50 p-1 rounded border border-gray-100">${eq}</p>
@@ -1434,13 +1485,13 @@
                      </p>
                      ${btns}
                  </div>`;
-          document.getElementById(`kb-${ot.estado}`).innerHTML += card;
+         document.getElementById(`kb-${ot.estado}`).innerHTML += card;
             });
          lucide.createIcons();
         }
 
         function moverOT(id, state) { 
-       if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede mover OTs a En Proceso."); return; }
+      if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede mover OTs a En Proceso."); return; }
            const ot = db.ots.find(o => o.id === id); 
            if(ot) { 
                ot.estado = state; 
@@ -1456,32 +1507,32 @@
 
         // ADELANTAR OT
         function abrirAdelantarOT(id) {
-       if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento o Supervisores pueden adelantar mantenimientos."); return; }
-           
-       document.getElementById('adelantar-ot-id').value = id;
-       document.getElementById('adelanto-fecha').value = new Date().toISOString().split('T')[0];
-           
+      if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento o Supervisores pueden adelantar mantenimientos."); return; }
+          
+      document.getElementById('adelantar-ot-id').value = id;
+      document.getElementById('adelanto-fecha').value = new Date().toISOString().split('T')[0];
+          
            const isAdminSup = currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor');
            const selectQuien = document.getElementById('adelanto-quien-select');
            const inputQuien = document.getElementById('adelanto-quien-input');
            
            if(isAdminSup) {
-           selectQuien.classList.remove('hidden');
-           inputQuien.classList.add('hidden');
-              selectQuien.required = true;
+          selectQuien.classList.remove('hidden');
+          inputQuien.classList.add('hidden');
+               selectQuien.required = true;
                inputQuien.required = false;
              selectQuien.innerHTML = '<option value="">Seleccione encargado...</option>' + 
-               db.personal.filter(p => p.rol.includes('Supervisor') || p.rol.includes('Administrador')).map(p => `<option value="${p.nombre}">${p.nombre} (${p.dpto})</option>`).join('');
+              db.personal.filter(p => p.rol.includes('Supervisor') || p.rol.includes('Administrador')).map(p => `<option value="${p.nombre}">${p.nombre} (${p.dpto})</option>`).join('');
            } else {
-           selectQuien.classList.add('hidden');
-           inputQuien.classList.remove('hidden');
-              selectQuien.required = false;
+          selectQuien.classList.add('hidden');
+          inputQuien.classList.remove('hidden');
+               selectQuien.required = false;
                inputQuien.required = true;
                inputQuien.value = currentUser.nombre;
                inputQuien.disabled = true;
            }
 
-       abrirModal('modalAdelantar', 'formAdelantar', false);
+      abrirModal('modalAdelantar', 'formAdelantar', false);
         }
 
         function ejecutarAdelanto(e) {
@@ -1499,17 +1550,17 @@
                 ot.fecha = nuevaF;
              db.notas_comms.push({ id: 'N'+Date.now(), fecha: new Date().toISOString().split('T')[0], autor: currentUser.nombre, dpto: currentUser.dpto, texto: `La OT ${id} fue adelantada para el ${nuevaF}. Solicitado por: ${quien}. Motivo: ${motivo}` });
                 saveDB();
-             cerrarModal('modalAdelantar');
+            cerrarModal('modalAdelantar');
             }
         }
 
         function abrirModalOT() {
-       if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede crear OTs."); return; }
+      if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede crear OTs."); return; }
            abrirModal('modalOT', 'formOT');
         }
 
         function abrirModalParada() {
-       if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede crear OTs."); return; }
+      if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede crear OTs."); return; }
          abrirModal('modalParada', 'formParada');
         }
 
@@ -1529,11 +1580,11 @@
             if(!equipoId || !tecnicoId || !desc || !tiempo) { mostrarAlerta("Complete todos los campos."); return; }
             db.ots.push({ id: 'OT-' + Date.now().toString().slice(-4), tipo: 'Correctivo', equipoId: equipoId, planId: null, desc: `Falla: ${motivo} - ${desc}`, tecnicoId: tecnicoId, fecha: new Date().toISOString().split('T')[0], estado: 'pendientes', tiempo: tiempo, repuestos: [], costoTotal: 0 });
             saveDB();
-         cerrarModal('modalParada');
+        cerrarModal('modalParada');
         }
 
         function prepararCancelacionOT(id) { 
-       if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede cancelar OTs."); return; }
+      if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede cancelar OTs."); return; }
        abrirModal('modalCancelOT', 'formCancelOT'); document.getElementById('cancel-ot-id').value = id; 
         }
         function ejecutarCancelacionOT(e) {
@@ -1558,14 +1609,14 @@
 
         function abrirChecklistUniversal(otId, dept) {
             const requiredDept = dept.charAt(0).toUpperCase() + dept.slice(1);
-        if(!checkPermission(requiredDept)) { mostrarAlerta(`Solo personal de ${requiredDept} puede realizar esta revisión.`); return; }
+       if(!checkPermission(requiredDept)) { mostrarAlerta(`Solo personal de ${requiredDept} puede realizar esta revisión.`); return; }
 
             const data = checklistsUniversales[dept];
-      document.getElementById('univ-ot-id').value = otId;
-         document.getElementById('univ-tipo-dept').value = dept;
+     document.getElementById('univ-ot-id').value = otId;
+        document.getElementById('univ-tipo-dept').value = dept;
           
-         document.getElementById('univ-header').className = `p-4 border-b flex justify-between items-center rounded-t-xl bg-${data.color}-600`;
-         document.getElementById('univ-titulo').innerText = data.titulo;
+        document.getElementById('univ-header').className = `p-4 border-b flex justify-between items-center rounded-t-xl bg-${data.color}-600`;
+        document.getElementById('univ-titulo').innerText = data.titulo;
 
          // Lógica Encargado (Admin escoge, Usuario Normal es automático)
          const isAdminSup = currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor');
@@ -1575,11 +1626,11 @@
          if(isAdminSup) {
              const personalDepto = db.personal.filter(p => p.dpto === requiredDept);
             selEncargado.innerHTML = '<option value="">Seleccione al encargado de la revisión...</option>' + personalDepto.map(p => `<option value="${p.id}">${p.nombre} (${p.rol})</option>`).join('');
-            selEncargado.classList.remove('hidden'); selEncargado.required = true;
-            inEncargado.classList.add('hidden'); inEncargado.required = false;
+           selEncargado.classList.remove('hidden'); selEncargado.required = true;
+           inEncargado.classList.add('hidden'); inEncargado.required = false;
          } else {
-            selEncargado.classList.add('hidden'); selEncargado.required = false;
-            inEncargado.classList.remove('hidden'); inEncargado.required = true;
+           selEncargado.classList.add('hidden'); selEncargado.required = false;
+           inEncargado.classList.remove('hidden'); inEncargado.required = true;
                 inEncargado.value = currentUser.nombre;
          }
           
@@ -1594,16 +1645,16 @@
          // Sección de Insumos (solo sanidad)
          const insumosSec = document.getElementById('univ-insumos-section');
          if(dept === 'sanidad') {
-            insumosSec.classList.remove('hidden');
+           insumosSec.classList.remove('hidden');
                 insumosSanidadTemp = [];
                 const repSel = document.getElementById('univ-insumo-sel');
                 repSel.innerHTML = '<option value="">No hay insumos (Opcional)</option>' + db.inventario.filter(r => r.tipo.includes('Sanidad') || r.tipo.includes('Consumible')).map(r => `<option value="${r.id}">${r.nombre} (Disponibles: ${r.stock})</option>`).join('');
-            actualizarListaInsumosSanidad();
+           actualizarListaInsumosSanidad();
          } else {
-            insumosSec.classList.add('hidden');
+           insumosSec.classList.add('hidden');
          }
 
-      abrirModal('modalChecklistUniversal', 'formUniv', false);
+     abrirModal('modalChecklistUniversal', 'formUniv', false);
         }
 
         let insumosSanidadTemp = [];
@@ -1617,16 +1668,16 @@
             const existe = insumosSanidadTemp.find(x => x.id === id);
             if(existe) { existe.cant += cant; }
             else { insumosSanidadTemp.push({ id: id, nombre: r.nombre, cant: cant, costoUnitario: r.costo }); }
-        actualizarListaInsumosSanidad();
+       actualizarListaInsumosSanidad();
         }
         function quitarInsumoSanidad(id) {
             insumosSanidadTemp = insumosSanidadTemp.filter(x => x.id !== id);
-        actualizarListaInsumosSanidad();
+       actualizarListaInsumosSanidad();
         }
         function actualizarListaInsumosSanidad() {
             const tbody = document.getElementById('univ-insumos-list');
             tbody.innerHTML = insumosSanidadTemp.map(r => `<tr><td class="p-2 truncate font-bold text-gray-700">${r.nombre}</td><td class="p-2 text-center text-teal-600 font-bold">${r.cant}</td><td class="p-2 text-right">$${r.costoUnitario.toFixed(2)}</td><td class="p-2 text-center"><button type="button" onclick="quitarInsumoSanidad('${r.id}')" class="text-red-500 hover:text-red-700 font-bold"><i data-lucide="minus-circle" class="w-4 h-4 mx-auto"></i></button></td></tr>`).join('');
-        if(insumosSanidadTemp.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin insumos registrados</td></tr>';
+       if(insumosSanidadTemp.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin insumos registrados</td></tr>';
             lucide.createIcons();
         }
 
@@ -1670,13 +1721,13 @@
         };
 
         function abrirAprobacionOT(otId) {
-       if(!checkPermission('Mantenimiento') && !checkPermission('Administración')) { mostrarAlerta("Solo Supervisores o Administradores pueden aprobar el cierre de OTs."); return; }
+      if(!checkPermission('Mantenimiento') && !checkPermission('Administración')) { mostrarAlerta("Solo Supervisores o Administradores pueden aprobar el cierre de OTs."); return; }
          otAprobacion = db.ots.find(o => o.id === otId);
       abrirModal('modalAprobarOT', 'formAprobarOT', false);
-      document.getElementById('formAprobarOT').reset();
-      document.getElementById('aprobar-ot-id').value = otId;
+     document.getElementById('formAprobarOT').reset();
+     document.getElementById('aprobar-ot-id').value = otId;
             
-      setTimeout(initTodasLasFirmas, 300);
+     setTimeout(initTodasLasFirmas, 300);
         }
 
         function initTodasLasFirmas() {
@@ -1717,7 +1768,7 @@
 
             const frecStr = plan.frec.toLowerCase();
             let diasSumar = 0;
-        if(frecStr.includes('diario')) diasSumar = 1;
+       if(frecStr.includes('diario')) diasSumar = 1;
             else if(frecStr.includes('semanal')) diasSumar = 7;
             else if(frecStr.includes('quincenal')) diasSumar = 15;
             else if(frecStr.includes('mensual')) diasSumar = 30;
@@ -1748,14 +1799,14 @@
 
         function procesarAprobacionOT(e) {
             e.preventDefault();
-    if(verificarCanvasVacio(canvasFirmas.mant.el) || verificarCanvasVacio(canvasFirmas.sanidad.el) || verificarCanvasVacio(canvasFirmas.calidad.el)) {
+   if(verificarCanvasVacio(canvasFirmas.mant.el) || verificarCanvasVacio(canvasFirmas.sanidad.el) || verificarCanvasVacio(canvasFirmas.calidad.el)) {
             mostrarAlerta("Se requieren las 3 firmas obligatorias de los supervisores para cerrar la OT.");
                 return;
             }
             otAprobacion.estado = 'finalizadas'; 
-      otAprobacion.observacionesMant = document.getElementById('aprobar-ot-mant').value;
-      otAprobacion.observacionesSanidad = document.getElementById('aprobar-ot-sanidad').value;
-      otAprobacion.observacionesCalidad = document.getElementById('aprobar-ot-calidad').value;
+     otAprobacion.observacionesMant = document.getElementById('aprobar-ot-mant').value;
+     otAprobacion.observacionesSanidad = document.getElementById('aprobar-ot-sanidad').value;
+     otAprobacion.observacionesCalidad = document.getElementById('aprobar-ot-calidad').value;
          
          // Calcular Costo Final en Base a M.O. + Repuestos + Fijo
          let costoMO = 0;
@@ -1775,7 +1826,7 @@
 
          otAprobacion.costoTotal = costoMO + costoRep + costoPrev;
 
-     calcularSiguienteOT(otAprobacion);
+    calcularSiguienteOT(otAprobacion);
 
             saveDB(); cerrarModal('modalAprobarOT');
         }
@@ -1785,13 +1836,13 @@
         let repuestosAñadidos = [];
 
         function abrirEjecucionOT(otId) {
-       if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede ejecutar esta OT."); return; }
+      if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede ejecutar esta OT."); return; }
 
             otEnEjecucion = db.ots.find(o => o.id === otId);
-      document.getElementById('ejec-ot-id').value = otId;
-      document.getElementById('ejec-titulo').innerText = otEnEjecucion.tipo === 'Preventivo' ? 'Ejecución de Mantenimiento Preventivo' : 'Reparación de Falla (Correctiva)';
-      document.getElementById('ejec-subtitulo').innerText = `${otEnEjecucion.id} - ${db.equipos.find(e=>e.id===otEnEjecucion.equipoId)?.nombre}`;
-      document.getElementById('ejec-obs').value = otEnEjecucion.obs || '';
+     document.getElementById('ejec-ot-id').value = otId;
+     document.getElementById('ejec-titulo').innerText = otEnEjecucion.tipo === 'Preventivo' ? 'Ejecución de Mantenimiento Preventivo' : 'Reparación de Falla (Correctiva)';
+     document.getElementById('ejec-subtitulo').innerText = `${otEnEjecucion.id} - ${db.equipos.find(e=>e.id===otEnEjecucion.equipoId)?.nombre}`;
+     document.getElementById('ejec-obs').value = otEnEjecucion.obs || '';
             const cont = document.getElementById('ejec-checklist-container'); cont.innerHTML = '';
             
             if (otEnEjecucion.tipo === 'Preventivo' && otEnEjecucion.planId) {
@@ -1811,9 +1862,9 @@
             repuestosAñadidos = [];
             const repSel = document.getElementById('ejec-repuesto-sel');
             repSel.innerHTML = '<option value="">No hay repuestos (Opcional)</option>' + db.inventario.filter(r => r.equipoId === otEnEjecucion.equipoId || !r.equipoId).map(r => `<option value="${r.id}">${r.nombre} (Disponibles: ${r.stock})</option>`).join('');
-        actualizarListaRepuestosEjec();
+       actualizarListaRepuestosEjec();
 
-      document.getElementById('modalEjecucionOT').classList.remove('hidden'); setTimeout(initCanvasFirma, 300);
+     document.getElementById('modalEjecucionOT').classList.remove('hidden'); setTimeout(initCanvasFirma, 300);
         }
 
         function addRepuestoToEjec() {
@@ -1826,25 +1877,25 @@
             const existe = repuestosAñadidos.find(x => x.id === id);
             if(existe) { existe.cant += cant; }
             else { repuestosAñadidos.push({ id: id, nombre: r.nombre, cant: cant, costoUnitario: r.costo }); }
-        actualizarListaRepuestosEjec();
+       actualizarListaRepuestosEjec();
         }
 
         function quitarRepuestoEjec(id) {
             repuestosAñadidos = repuestosAñadidos.filter(x => x.id !== id);
-        actualizarListaRepuestosEjec();
+       actualizarListaRepuestosEjec();
         }
 
         function actualizarListaRepuestosEjec() {
             const tbody = document.getElementById('ejec-repuestos-list');
             tbody.innerHTML = repuestosAñadidos.map(r => `<tr><td class="p-2 truncate font-bold text-gray-700">${r.nombre}</td><td class="p-2 text-center text-blue-600 font-bold">${r.cant}</td><td class="p-2 text-right">$${r.costoUnitario.toFixed(2)}</td><td class="p-2 text-center"><button type="button" onclick="quitarRepuestoEjec('${r.id}')" class="text-red-500 hover:text-red-700 font-bold"><i data-lucide="minus-circle" class="w-4 h-4 mx-auto"></i></button></td></tr>`).join('');
-        if(repuestosAñadidos.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin artículos registrados</td></tr>';
+       if(repuestosAñadidos.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin artículos registrados</td></tr>';
             lucide.createIcons();
         }
 
         function procesarEjecucionOT() {
           const form = document.getElementById('formEjecucion');
          if(!form.checkValidity()) { form.reportValidity(); return; }
-       if(verificarCanvasVacio(canvasF)) { mostrarAlerta("Debe realizar su firma en el recuadro asignado."); return; }
+      if(verificarCanvasVacio(canvasF)) { mostrarAlerta("Debe realizar su firma en el recuadro asignado."); return; }
             
             // Restar inventario
             for(let u of repuestosAñadidos) {
@@ -1874,73 +1925,73 @@
         // --- MODALES Y CRUD GLOBAL ---
         function abrirModal(modalId, formId, reset = true) { 
          if(reset && formId) { 
-        document.getElementById(formId).reset(); 
-        document.querySelectorAll(`#${formId} input[type="hidden"]`).forEach(i => i.value = ''); 
-        if(document.getElementById('per-preview-img')) { document.getElementById('per-preview-img').classList.add('hidden'); document.getElementById('per-preview-icon').classList.remove('hidden'); }
-        if(document.getElementById('eq-preview-img')) { document.getElementById('eq-preview-img').classList.add('hidden'); document.getElementById('eq-preview-icon').classList.remove('hidden'); }
+       document.getElementById(formId).reset(); 
+       document.querySelectorAll(`#${formId} input[type="hidden"]`).forEach(i => i.value = ''); 
+       if(document.getElementById('per-preview-img')) { document.getElementById('per-preview-img').classList.add('hidden'); document.getElementById('per-preview-icon').classList.remove('hidden'); }
+       if(document.getElementById('eq-preview-img')) { document.getElementById('eq-preview-img').classList.add('hidden'); document.getElementById('eq-preview-icon').classList.remove('hidden'); }
              
              // Mostrar creación de credenciales solo si es Admin en Modal Personal
              if(modalId === 'modalPersonal' && currentUser && currentUser.rol.includes('Administrador')) {
-            document.getElementById('auth-fields').classList.remove('hidden');
-            document.getElementById('per-user').required = false; // No es obligatorio, solo si quiere
-            document.getElementById('per-pass').required = false;
+           document.getElementById('auth-fields').classList.remove('hidden');
+           document.getElementById('per-user').required = false; // No es obligatorio, solo si quiere
+           document.getElementById('per-pass').required = false;
              } else if(document.getElementById('auth-fields')) {
-            document.getElementById('auth-fields').classList.add('hidden');
+           document.getElementById('auth-fields').classList.add('hidden');
              }
             } 
-      document.getElementById(modalId).classList.remove('hidden'); 
-      document.getElementById(modalId).classList.add('flex'); 
+     document.getElementById(modalId).classList.remove('hidden'); 
+     document.getElementById(modalId).classList.add('flex'); 
         }
         function cerrarModal(modalId) { document.getElementById(modalId).classList.add('hidden'); document.getElementById(modalId).classList.remove('flex'); }
 
         function editarElemento(tipo, id) {
            if(tipo === 'equipo') {
-        abrirModal('modalEquipo','formEquipo'); 
+       abrirModal('modalEquipo','formEquipo'); 
                const x = db.equipos.find(i=>i.id===id); 
-        document.getElementById('eq-edit-id').value = x.id; 
-        document.getElementById('eq-id').value = x.id; 
-        document.getElementById('eq-nombre').value = x.nombre; 
-        document.getElementById('eq-area').value = x.area; 
-        document.getElementById('eq-img-b64').value = x.img || '';
+       document.getElementById('eq-edit-id').value = x.id; 
+       document.getElementById('eq-id').value = x.id; 
+       document.getElementById('eq-nombre').value = x.nombre; 
+       document.getElementById('eq-area').value = x.area; 
+       document.getElementById('eq-img-b64').value = x.img || '';
                if(x.img) {
-             document.getElementById('eq-preview-img').src = x.img;
-             document.getElementById('eq-preview-img').classList.remove('hidden');
-             document.getElementById('eq-preview-icon').classList.add('hidden');
+            document.getElementById('eq-preview-img').src = x.img;
+            document.getElementById('eq-preview-img').classList.remove('hidden');
+            document.getElementById('eq-preview-icon').classList.add('hidden');
                }
             }
             if(tipo === 'inventario') { 
-        abrirModal('modalInventario','formRepuesto'); 
+       abrirModal('modalInventario','formRepuesto'); 
                const x = db.inventario.find(i=>i.id===id); 
-        document.getElementById('rep-edit-id').value = x.id;
-        document.getElementById('rep-tipo').value = x.tipo || 'Repuesto';
-        document.getElementById('rep-codigo').value = x.id;
-           document.getElementById('rep-nombre').value = x.nombre;
-           document.getElementById('rep-equipo').value = x.equipoId || '';
-        document.getElementById('rep-stock').value = x.stock;
-        document.getElementById('rep-min').value = x.min;
-        document.getElementById('rep-costo').value = x.costo;
-        document.getElementById('rep-url').value = x.url||'';
-        document.getElementById('rep-img-b64').value = x.img || '';
-        document.getElementById('rep-desc').value = x.desc || '';
+       document.getElementById('rep-edit-id').value = x.id;
+       document.getElementById('rep-tipo').value = x.tipo || 'Repuesto';
+       document.getElementById('rep-codigo').value = x.id;
+          document.getElementById('rep-nombre').value = x.nombre;
+          document.getElementById('rep-equipo').value = x.equipoId || '';
+       document.getElementById('rep-stock').value = x.stock;
+       document.getElementById('rep-min').value = x.min;
+       document.getElementById('rep-costo').value = x.costo;
+       document.getElementById('rep-url').value = x.url||'';
+       document.getElementById('rep-img-b64').value = x.img || '';
+       document.getElementById('rep-desc').value = x.desc || '';
             }
          if(tipo === 'personal') {
-        abrirModal('modalPersonal','formPersonal'); 
+       abrirModal('modalPersonal','formPersonal'); 
              const x = db.personal.find(i=>i.id===id); 
-        document.getElementById('per-edit-id').value = x.id;
-           document.getElementById('per-nombre').value = x.nombre;
-        document.getElementById('per-dpto').value = x.dpto || 'Mantenimiento';
-           document.getElementById('per-rol').value = x.rol;
-        document.getElementById('per-valor').value = x.valor; 
-        document.getElementById('per-img-b64').value = x.img || '';
-        document.getElementById('per-desc').value = x.desc || '';
+       document.getElementById('per-edit-id').value = x.id;
+          document.getElementById('per-nombre').value = x.nombre;
+       document.getElementById('per-dpto').value = x.dpto || 'Mantenimiento';
+          document.getElementById('per-rol').value = x.rol;
+       document.getElementById('per-valor').value = x.valor; 
+       document.getElementById('per-img-b64').value = x.img || '';
+       document.getElementById('per-desc').value = x.desc || '';
              if(x.img) { document.getElementById('per-preview-img').src = x.img; document.getElementById('per-preview-img').classList.remove('hidden'); document.getElementById('per-preview-icon').classList.add('hidden'); }
              
              // Si se edita y es Admin, mostrar auth options
              if(currentUser && currentUser.rol.includes('Administrador')) {
                  const authUser = db.usuariosAuth.find(u => u.personalId === id);
                  if(authUser) {
-                document.getElementById('per-user').value = authUser.user;
-                document.getElementById('per-pass').value = authUser.pass;
+               document.getElementById('per-user').value = authUser.user;
+               document.getElementById('per-pass').value = authUser.pass;
                  }
              }
             }
@@ -2086,11 +2137,11 @@
         // --- INVENTARIO ---
         function mostrarImgDesc(id) {
             const rep = db.inventario.find(r => r.id === id); if(!rep) return;
-         document.getElementById('ver-img-titulo').innerText = rep.nombre; document.getElementById('ver-img-id').innerText = "ID: " + rep.id;
+        document.getElementById('ver-img-titulo').innerText = rep.nombre; document.getElementById('ver-img-id').innerText = "ID: " + rep.id;
             const img = document.getElementById('ver-img-src'); const icon = document.getElementById('ver-img-icon');
             if(rep.img) { img.src = rep.img; img.classList.remove('hidden'); icon.classList.add('hidden'); } else { img.classList.add('hidden'); icon.classList.remove('hidden'); }
-     document.getElementById('ver-img-desc').innerText = rep.desc || 'No hay descripción detallada para este artículo.';
-         abrirModal('modalVerImgDesc', null, false);
+    document.getElementById('ver-img-desc').innerText = rep.desc || 'No hay descripción detallada para este artículo.';
+        abrirModal('modalVerImgDesc', null, false);
         }
 
         function renderInventario() { 
@@ -2134,7 +2185,7 @@
 
         function renderCostos() {
             // Valor actual de inventario
-         document.getElementById('costo-inv-total').innerText = `$${db.inventario.reduce((acc, r) => acc + (r.costo * r.stock), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`; 
+        document.getElementById('costo-inv-total').innerText = `$${db.inventario.reduce((acc, r) => acc + (r.costo * r.stock), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`; 
             
             let valMo = 0; 
             let valTotalGlobal = 0;
@@ -2152,7 +2203,7 @@
             }
             
             // Ordenamos más recientes primero
-           otsFinalizadas.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+          otsFinalizadas.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
 
          if(otsFinalizadas.length === 0) tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">No hay facturación/OTs finalizadas en el periodo.</td></tr>'; 
             
@@ -2199,8 +2250,8 @@
             </tr>`; 
             }); 
             
-         document.getElementById('costo-mo-total').innerText = `$${valMo.toLocaleString('en-US', {minimumFractionDigits: 2})}`; 
-         document.getElementById('costo-global-total').innerText = `$${valTotalGlobal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        document.getElementById('costo-mo-total').innerText = `$${valMo.toLocaleString('en-US', {minimumFractionDigits: 2})}`; 
+        document.getElementById('costo-global-total').innerText = `$${valTotalGlobal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
           lucide.createIcons({ root: document.getElementById('costos-mo-tbody') });
         }
 
@@ -2234,13 +2285,15 @@
         // Esta bandera evita guardar datos antes de que se hayan cargado desde Firebase
         let isCloudLoaded = false;
 
-        window.sincronizarConFirebase = async (datosApp) => {
+       window.sincronizarConFirebase = async (datosApp) => {
             if (!isCloudLoaded) return; // Protección: evita sobreescribir la nube antes de cargar
             try {
                 await setDoc(dbRef, datosApp);
                 window.mostrarToastGuardado(); // Dispara el pop-up verde de guardado
             } catch (error) {
                 console.error("❌ Error al guardar en Firebase:", error);
+                // ESTA ALERTA ES NUEVA: Te avisará si Firebase rechaza guardar algo para no quedarse callado
+                mostrarAlerta("Error al sincronizar con la nube. Es posible que el archivo subido sea demasiado grande o haya un problema de conexión.");
             }
         };
 
@@ -2249,16 +2302,16 @@
             try {
                const docSnap = await getDoc(dbRef);
                 if (docSnap.exists()) {
-                   console.log("📥 Base de datos descargada de Firebase.");
-                   window.actualizarDesdeFirebase(docSnap.data());
+                  console.log("📥 Base de datos descargada de Firebase.");
+                  window.actualizarDesdeFirebase(docSnap.data());
                 } else {
-                   console.log("⚠️ No hay datos previos en Firebase. Subiendo estado inicial...");
+                  console.log("⚠️ No hay datos previos en Firebase. Subiendo estado inicial...");
                    await setDoc(dbRef, window.appDB);
                 }
                 // Permitimos que la app ahora sí pueda guardar
                 isCloudLoaded = true; 
             } catch (error) {
-               console.error("❌ Error al conectar con Firebase:", error);
+              console.error("❌ Error al conectar con Firebase:", error);
             }
         }
 
