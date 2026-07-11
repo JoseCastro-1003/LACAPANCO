@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LACAPANCO - Sistema CMMS & SCADA V9.4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+   <style>
+       ::-webkit-scrollbar { width: 6px; height: 6px; }
+       ::-webkit-scrollbar-track { background: #f1f1f1; }
+       ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+       ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+       .tab-content { display: none; }
+       .tab-content.active { display: flex; flex-direction: column; height: 100%; }
+       .chart-container { position: relative; height: 250px; width: 100%; }
+       .kanban-col { min-height: 200px; max-height: calc(100vh - 220px); overflow-y: auto; }
+ 
+        /* Estilo de Árbol */
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        
+        /* Canvas Firma */
+       .firma-canvas { border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 8px; cursor: crosshair; touch-action: none; }
+ 
+        /* Animación Parpadeo de Stock Bajo */
+        .parpadeo-stock { animation: parpadeo 1.5s infinite; }
+       @keyframes parpadeo {
+            0% { background-color: #fef08a; }
+            50% { background-color: transparent; }
+            100% { background-color: #fef08a; }
+        }
+ 
+        /* Modal Login Glassmorphism */
+       .login-bg { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+ 
+        @media print {
+            body * { visibility: hidden; }
+           #print-section, #print-section * { visibility: visible; }
+           #print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white;}
+           .no-print { display: none !important; }
+        }
+   </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800 font-sans text-sm relative">
+ 
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginOverlay" class="fixed inset-0 login-bg z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col items-center">
+           <div class="bg-blue-600 p-4 rounded-full mb-4 shadow-lg"><i data-lucide="shield-check" class="text-white w-10 h-10"></i></div>
+           <h1 class="text-2xl font-black text-slate-800 tracking-wider text-center">LACAPANCO</h1>
+           <p class="text-xs text-slate-500 font-bold mb-6 text-center">CMMS & SCADA v9.4</p>
+            
+           <form id="loginForm" class="w-full space-y-4" onsubmit="procesarLogin(event)">
+               <div>
+                   <label class="block text-xs font-bold text-gray-600 mb-1">Usuario</label>
+                   <div class="relative">
+                       <i data-lucide="user" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                       <input type="text" id="loginUser" required class="w-full pl-9 pr-3 py-2 border rounded-lg bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" placeholder="Escribir usuario">
+                   </div>
+               </div>
+               <div>
+                   <label class="block text-xs font-bold text-gray-600 mb-1">Contraseña</label>
+                   <div class="relative">
+                       <i data-lucide="lock" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                       <input type="password" id="loginPass" required class="w-full pl-9 pr-3 py-2 border rounded-lg bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition" placeholder="Escribir contraseña">
+                   </div>
+                </div>
+                <!-- Mensaje de error de login -->
+                <p id="loginError" class="hidden text-red-600 text-xs font-bold text-center bg-red-50 border border-red-200 py-1.5 rounded-lg"></p>
+ 
+               <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-lg transition duration-200 mt-2">Ingresar al Sistema</button>
+           </form>
+       </div>
+    </div>
+ 
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20 shrink-0">
+        <div class="p-4 flex items-center gap-3 border-b border-slate-700">
+           <div class="bg-blue-600 p-2 rounded-lg cursor-pointer hover:bg-blue-500 transition relative overflow-hidden flex items-center justify-center w-10 h-10" onclick="cambiarLogo()" id="sidebar-logo-container" title="Click para cambiar logo (Solo Admin)">
+               <img id="custom-logo" src="" class="hidden w-full h-full object-cover">
+               <i id="default-logo" data-lucide="settings-2" class="text-white w-6 h-6"></i>
+           </div>
+           <input type="file" id="logo-file" hidden accept="image/*" onchange="guardarLogo(event)">
+           <div>
+               <h1 class="font-bold text-lg tracking-wider">LACAPANCO</h1>
+               <p class="text-[10px] text-slate-400">CMMS v9.4 Master</p>
+           </div>
+       </div>
+        
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-2">
+           <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left active" data-target="dashboard"><i data-lucide="layout-dashboard" class="w-5 h-5 text-blue-400"></i> Dashboard Operativo</button>
+           <button onclick="switchTab('scada')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="scada"><i data-lucide="activity" class="w-5 h-5 text-green-400"></i> SCADA & Prod.</button>
+           <div class="my-2 border-t border-slate-700"></div>
+           <button onclick="switchTab('equipos')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="equipos"><i data-lucide="network" class="w-5 h-5 text-orange-400"></i> Árbol de Equipos</button>
+           <button onclick="switchTab('checklists')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="checklists"><i data-lucide="list-checks" class="w-5 h-5 text-yellow-400"></i> Planes de Trabajo</button>
+           <button onclick="switchTab('ots')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="ots"><i data-lucide="trello" class="w-5 h-5 text-indigo-400"></i> Kanban OTs</button>
+           <button onclick="switchTab('calendario')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="calendario"><i data-lucide="calendar" class="w-5 h-5 text-pink-400"></i> Calendario</button>
+           <div class="my-2 border-t border-slate-700"></div>
+           <button onclick="switchTab('inventario')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="inventario"><i data-lucide="package" class="w-5 h-5 text-teal-400"></i> Inventario</button>
+           <button onclick="switchTab('cotizaciones')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="cotizaciones"><i data-lucide="shopping-cart" class="w-5 h-5 text-purple-400"></i> Compras</button>
+           <button onclick="switchTab('costos')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="costos"><i data-lucide="circle-dollar-sign" class="w-5 h-5 text-emerald-400"></i> Costos & Analítica</button>
+           <div class="my-2 border-t border-slate-700"></div>
+           <button onclick="switchTab('rrhh')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-800 transition text-left" data-target="rrhh"><i data-lucide="users" class="w-5 h-5 text-red-400"></i> RRHH</button>
+        </nav>
+        
+        <!-- Botones de DB Backup Sin Archivos JSON -->
+        <div class="p-4 border-t border-slate-700 bg-slate-800/50 space-y-2">
+           <p class="text-[10px] text-slate-400 font-bold uppercase text-center mb-1">Gestión de Datos</p>
+           <button onclick="abrirModalSync('exportar')" class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white text-xs py-2 rounded transition"><i data-lucide="copy" class="w-3 h-3"></i> Copiar Datos (Exportar)</button>
+           <button onclick="abrirModalSync('importar')" class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white text-xs py-2 rounded transition"><i data-lucide="clipboard-paste" class="w-3 h-3"></i> Pegar Datos (Importar)</button>
+       </div>
+   </aside>
+ 
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden relative">
+       <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0">
+           <h2 class="text-xl font-bold text-slate-800" id="top-title">Dashboard Operativo</h2>
+            
+           <div class="flex items-center gap-4">
+               <span class="text-xs bg-slate-100 px-3 py-1.5 rounded-lg text-slate-600 font-bold shadow-sm" id="clock">--:--</span>
+                
+               <!-- Info de Usuario Logueado -->
+               <div class="flex items-center gap-3 border-l pl-4 border-gray-300">
+                   <div class="text-right">
+                       <p class="text-sm font-bold text-gray-800 leading-none" id="hdr-user-name">Usuario</p>
+                       <p class="text-[10px] text-blue-600 font-bold uppercase" id="hdr-user-rol">Rol</p>
+                   </div>
+                   <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center border-2 border-blue-200 overflow-hidden">
+                       <img id="hdr-user-img" src="" class="w-full h-full object-cover hidden">
+                       <i id="hdr-user-icon" data-lucide="user" class="text-blue-600 w-5 h-5"></i>
+                   </div>
+                   <button onclick="cerrarSesion()" class="ml-2 text-gray-400 hover:text-red-500 transition" title="Cerrar Sesión"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+               </div>
+           </div>
+       </header>
+ 
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 w-full">
+            
+           <!-- 1. DASHBOARD COMPLETO -->
+           <div id="tab-dashboard" class="tab-content active space-y-4">
+                
+                <!-- KPIs Top Bar -->
+               <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+               <!-- Completadas -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-green-500 text-center">
+                   <i data-lucide="check-circle" class="w-5 h-5 text-green-500 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-ots-comp">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">OTs Completadas</p>
+               </div>
+               <!-- Abiertas -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-blue-500 text-center">
+                   <i data-lucide="folder-open" class="w-5 h-5 text-blue-500 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-ots-open">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">OTs Abiertas</p>
+               </div>
+                <!-- Atrasadas -->
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-red-600 text-center">
+                   <i data-lucide="clock-4" class="w-5 h-5 text-red-600 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-ots-atrasadas">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">OTs Atrasadas</p>
+               </div>
+                <!-- Stock Crítico -->
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-orange-500 text-center">
+                   <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-500 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-stock">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">Stock Crítico</p>
+               </div>
+               <!-- Eq. Operativos -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-teal-500 text-center">
+                   <i data-lucide="power" class="w-5 h-5 text-teal-500 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-eq-on">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">Eq. Operativos</p>
+               </div>
+               <!-- Eq. Detenidos -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-gray-500 text-center">
+                   <i data-lucide="power-off" class="w-5 h-5 text-gray-500 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-eq-off">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">Eq. Detenidos</p>
+                </div>
+                <!-- OTs Canceladas -->
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-purple-500 text-center">
+                   <i data-lucide="x-octagon" class="w-5 h-5 text-purple-500 mb-1"></i>
+                   <h3 class="text-2xl font-black text-slate-700" id="kpi-ots-canc">0</h3>
+                   <p class="text-[10px] text-gray-500 font-bold uppercase leading-tight mt-1">OTs Canceladas</p>
+               </div>
+               <!-- KPI 1 (Disponibilidad) -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-indigo-500 text-center">
+                   <div class="flex justify-between items-center"><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Disponibilidad</p><i data-lucide="activity" class="w-4 h-4 text-indigo-400 ml-1"></i></div>
+                   <h3 class="text-3xl font-black text-slate-700 mt-2" id="kpi-disp">0%</h3>
+                   <p class="text-[9px] text-gray-400 mt-1">Planta operativa</p>
+               </div>
+               <!-- KPI 2 (MTBF) -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-blue-400 text-center">
+                   <div class="flex justify-between items-center"><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">MTBF</p><i data-lucide="clock" class="w-4 h-4 text-blue-400 ml-1"></i></div>
+                   <h3 class="text-3xl font-black text-slate-700 mt-2" id="kpi-mtbf">0h</h3>
+                   <p class="text-[9px] text-gray-400 mt-1">T. Medio entre fallas</p>
+               </div>
+               <!-- KPI 3 (MTTR) -->
+               <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center border-t-4 border-t-red-400 text-center">
+                   <div class="flex justify-between items-center"><p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">MTTR</p><i data-lucide="tool" class="w-4 h-4 text-red-400 ml-1"></i></div>
+                   <h3 class="text-3xl font-black text-slate-700 mt-2" id="kpi-mttr">0h</h3>
+                   <p class="text-[9px] text-gray-400 mt-1">T. Medio de reparación</p>
+                   </div>
+           </div>
+ 
+           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1">
+               <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col h-64"><h3 class="font-bold text-gray-700 mb-2 text-sm text-center">Distribución de OTs</h3><div class="chart-container flex-1 h-full relative"><canvas id="chartOTs"></canvas></div></div>
+               <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col h-64"><h3 class="font-bold text-gray-700 mb-2 text-sm text-center">Planificadas vs Correctivas</h3><div class="chart-container flex-1 h-full relative"><canvas id="chartTipos"></canvas></div></div>
+               <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col h-64 overflow-y-auto"><h3 class="font-bold text-gray-700 mb-3 flex justify-between text-sm">Registro de Cancelaciones</h3><div id="dashboard-alerts" class="space-y-2"></div></div>
+               </div>
+ 
+               <!-- Secciones de Registros Solicitados -->
+               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <!-- OTs Abiertas y Atrasadas -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-blue-100 h-64 flex flex-col">
+                    <h3 class="font-bold text-blue-800 mb-2 text-sm sticky top-0 bg-white z-10 border-b pb-1">Registro de OTs Abiertas</h3>
+                    <div id="dash-list-abiertas" class="space-y-2 text-xs overflow-y-auto flex-1 p-1"></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-red-100 h-64 flex flex-col">
+                    <h3 class="font-bold text-red-800 mb-2 text-sm sticky top-0 bg-white z-10 border-b pb-1">Registro de OTs Atrasadas</h3>
+                    <div id="dash-list-atrasadas" class="space-y-2 text-xs overflow-y-auto flex-1 p-1"></div>
+                </div>
+                <!-- OTs Correctivas y Completadas -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-rose-100 h-64 flex flex-col">
+                    <h3 class="font-bold text-rose-800 mb-2 text-sm sticky top-0 bg-white z-10 border-b pb-1">Registro de OTs Correctivas</h3>
+                    <div id="dash-list-correctivas" class="space-y-2 text-xs overflow-y-auto flex-1 p-1"></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-green-100 h-64 flex flex-col">
+                    <h3 class="font-bold text-green-800 mb-2 text-sm sticky top-0 bg-white z-10 border-b pb-1">Registro de OTs Completadas</h3>
+                    <div id="dash-list-completadas" class="space-y-2 text-xs overflow-y-auto flex-1 p-1"></div>
+                </div>
+                 <!-- Alerta de Stock Bajo Detallado -->
+                 <div class="bg-white p-4 rounded-xl shadow-sm border border-orange-200 h-64 flex flex-col">
+                    <h3 class="font-bold text-orange-700 mb-2 text-sm sticky top-0 bg-white z-10 border-b pb-1 flex justify-between"><span>Alerta de Stock Bajo</span> <i data-lucide="alert-triangle" class="w-4 h-4 text-orange-500"></i></h3>
+                    <div id="dash-list-stock-bajo" class="space-y-2 text-xs overflow-y-auto flex-1 p-1"></div>
+                </div>
+               </div>
+ 
+               <!-- Tablón Interdepartamental ampliado -->
+               <div class="grid grid-cols-1 gap-4">
+               <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-200 h-64 flex flex-col relative overflow-hidden">
+                   <h3 class="font-bold text-indigo-800 mb-2 text-sm sticky top-0 bg-white z-10 border-b pb-1 flex items-center gap-1"><i data-lucide="message-square" class="w-4 h-4"></i> Tablón Interdepartamental</h3>
+                   <div id="dash-comms" class="flex-1 overflow-y-auto space-y-2 text-xs mb-2 p-1"></div>
+                   <div class="flex gap-2 shrink-0 bg-indigo-50 p-2 rounded items-center">
+                         <input type="text" id="nueva-nota-comm" class="border rounded p-1.5 flex-1 text-xs outline-none focus:border-indigo-400" placeholder="Escribe un mensaje, nota o alerta (Se enviará con tu usuario)..." onkeydown="if(event.key==='Enter') agregarNotaComm()">
+                        <button onclick="agregarNotaComm()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-indigo-700 transition flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> Enviar</button>
+                   </div>
+                   </div>
+               </div>
+            </div>
+ 
+            <!-- 2. SCADA -->
+            <div id="tab-scada" class="tab-content">
+                <p class="text-gray-500 mb-4">Monitoreo de telemetría. Presione el botón para cambiar el estado del equipo. (Restringido si hay OTs activas en proceso de mantenimiento).</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="scada-container"></div>
+           </div>
+ 
+           <!-- 3. ÁRBOL EQUIPOS -->
+          <div id="tab-equipos" class="tab-content h-full">
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-gray-500">Estructura jerárquica de la planta.</p>
+                    <button onclick="abrirModal('modalEquipo', 'formEquipo')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 flex gap-2"><i data-lucide="plus"></i> Nuevo Equipo</button>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow border border-gray-200 flex-1 overflow-y-auto">
+                <details open class="mb-2">
+                    <summary class="font-black text-lg text-slate-800 flex items-center gap-2 mb-4 hover:text-blue-600 select-none"><i data-lucide="building-2" class="w-6 h-6 text-blue-600"></i> EMPRESA LACAPANCO</summary>
+                    <div class="ml-8 border-l-2 border-gray-200 pl-4 space-y-4" id="tree-container"></div>
+                </details>
+            </div>
+        </div>
+ 
+         <!-- 4. PLANES (CHECKLISTS) -->
+         <div id="tab-checklists" class="tab-content">
+                <div id="checklists-home">
+                    <p class="text-gray-500 mb-4">Seleccione un equipo para gestionar sus planes de mantenimiento y frecuencias.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" id="cl-equipos-grid"></div>
+            </div>
+            <div id="checklists-details" class="hidden flex-col h-full">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                    <div class="flex items-center gap-3"><button onclick="volverChecklists()" class="p-2 bg-gray-200 rounded hover:bg-gray-300"><i data-lucide="arrow-left"></i></button><h3 class="text-lg font-bold text-gray-800" id="cl-eq-nombre"></h3></div>
+                    <button onclick="abrirBuilderPlan()" class="bg-yellow-500 text-white px-4 py-2 rounded shadow hover:bg-yellow-600 flex gap-2 text-sm font-bold"><i data-lucide="file-plus-2"></i> Añadir Nuevo Plan</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-6" id="cl-planes-grid"></div>
+            </div>
+        </div>
+ 
+         <!-- 5. KANBAN OTS -->
+         <div id="tab-ots" class="tab-content h-full">
+            <div class="flex justify-between mb-4 shrink-0">
+                <h3 class="font-bold text-gray-700 text-lg">Tablero Kanban Interdepartamental</h3>
+                <div class="flex gap-2">
+                    <button onclick="abrirModalParada()" class="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 flex gap-2 text-sm"><i data-lucide="alert-octagon"></i> Reporte de Falla (No Planificada)</button>
+                    <button onclick="abrirModalOT()" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 flex gap-2 text-sm"><i data-lucide="calendar-plus"></i> Programar OT Preventiva</button>
+                </div>
+                </div>
+                <!-- Kanban con 6 Columnas -->
+                <div class="flex-1 flex gap-4 overflow-x-auto h-full pb-4 items-start">
+                <div class="bg-gray-100 rounded-lg p-2 flex flex-col min-w-[260px] w-[260px] max-h-full"><h4 class="font-bold text-gray-700 mb-2 px-1">Pendientes</h4><div id="kb-pendientes" class="kanban-col space-y-2 flex-1"></div></div>
+                <div class="bg-blue-50 rounded-lg p-2 flex flex-col min-w-[260px] w-[260px] max-h-full"><h4 class="font-bold text-blue-800 mb-2 px-1">En Proceso</h4><div id="kb-proceso" class="kanban-col space-y-2 flex-1"></div></div>
+                <div class="bg-teal-50 rounded-lg p-2 flex flex-col min-w-[260px] w-[260px] max-h-full border-t-2 border-teal-500"><h4 class="font-bold text-teal-800 mb-2 px-1">Sanidad</h4><div id="kb-sanidad" class="kanban-col space-y-2 flex-1"></div></div>
+                <div class="bg-indigo-50 rounded-lg p-2 flex flex-col min-w-[260px] w-[260px] max-h-full border-t-2 border-indigo-500"><h4 class="font-bold text-indigo-800 mb-2 px-1">Calidad</h4><div id="kb-calidad" class="kanban-col space-y-2 flex-1"></div></div>
+                <div class="bg-orange-50 rounded-lg p-2 flex flex-col min-w-[260px] w-[260px] max-h-full border-t-2 border-orange-500"><h4 class="font-bold text-orange-800 mb-2 px-1">En Revisión (Firmas)</h4><div id="kb-revision" class="kanban-col space-y-2 flex-1"></div></div>
+                <div class="bg-green-50 rounded-lg p-2 flex flex-col min-w-[260px] w-[260px] max-h-full"><h4 class="font-bold text-green-800 mb-2 px-1">Finalizadas</h4><div id="kb-finalizadas" class="kanban-col space-y-2 flex-1"></div></div>
+                </div>
+            </div>
+ 
+            <!-- 6. CALENDARIO -->
+            <div id="tab-calendario" class="tab-content">
+                <div class="bg-white rounded-xl shadow border border-gray-200 p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2"><i data-lucide="calendar-days"></i> Calendario</h3>
+                    <div class="flex gap-2">
+                          <select id="cal-month" class="border p-2 rounded shadow-sm font-bold text-gray-700" onchange="renderCalendario()"></select>
+                          <select id="cal-year" class="border p-2 rounded shadow-sm font-bold text-gray-700" onchange="renderCalendario()"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-7 gap-px bg-gray-300 border border-gray-300 rounded-lg overflow-hidden flex-1" id="cal-grid"></div>
+            </div>
+        </div>
+ 
+         <!-- 7. INVENTARIO -->
+         <div id="tab-inventario" class="tab-content">
+            <div class="flex justify-between mb-4">
+                <div class="flex gap-2">
+                    <input type="text" id="search-inv" placeholder="Buscar repuesto..." class="border p-2 rounded w-64 shadow-sm" onkeyup="renderInventario()">
+                    <select id="filter-inv-eq" class="border p-2 rounded shadow-sm bg-white font-bold text-gray-600" onchange="renderInventario()"></select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="abrirModal('modalInventario', 'formRepuesto'); document.getElementById('rep-tipo').value='Repuesto';" class="bg-teal-600 text-white px-4 py-2 rounded shadow hover:bg-teal-700 flex gap-2"><i data-lucide="plus"></i> Ingresar Repuesto</button>
+                    <button onclick="abrirModal('modalInventario', 'formRepuesto'); document.getElementById('rep-tipo').value='Insumo de Sanidad';" class="bg-cyan-600 text-white px-4 py-2 rounded shadow hover:bg-cyan-700 flex gap-2"><i data-lucide="droplet"></i> Ingresar Insumo</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table class="w-full text-left border-collapse relative">
+                    <thead class="bg-slate-100 border-b sticky top-0 z-10 shadow-sm">
+                          <tr>
+                              <th class="p-3 text-xs text-center w-12"><i data-lucide="image" class="w-4 h-4 mx-auto text-gray-400"></i></th>
+                              <th class="p-3 text-xs">Código</th>
+                              <th class="p-3 text-xs">Nombre</th>
+                              <th class="p-3 text-xs">Tipo</th>
+                              <th class="p-3 text-xs">Equipo Asociado</th>
+                              <th class="p-3 text-xs text-center">Stock</th>
+                              <th class="p-3 text-xs text-center">Min</th>
+                              <th class="p-3 text-xs text-center">Comprar</th>
+                              <th class="p-3 text-xs text-center">Acciones</th>
+                          </tr>
+                   </thead>
+                    <tbody id="inventario-tbody" class="divide-y text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+ 
+         <!-- 8. COMPRAS -->
+         <div id="tab-cotizaciones" class="tab-content">
+            <div class="flex justify-between mb-4">
+                <div class="flex gap-2">
+                    <select id="filter-compra-eq" class="border p-2 rounded shadow-sm bg-white font-bold text-gray-600" onchange="renderCotizaciones()"></select>
+                </div>
+                <button onclick="abrirModalCompraManual()" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 flex gap-2"><i data-lucide="shopping-bag"></i> Compra Manual</button>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-100 border-b"><tr><th class="p-3 text-xs">ID Compra</th><th class="p-3 text-xs">Artículo</th><th class="p-3 text-xs">Equipo</th><th class="p-3 text-xs text-center">Cant.</th><th class="p-3 text-xs">Enlace Proveedor</th><th class="p-3 text-xs text-center">Estado</th><th class="p-3 text-xs text-center">Confirmar</th></tr></thead>
+                    <tbody id="cotizaciones-tbody" class="divide-y text-sm"></tbody>
+                </table>
+              </div>
+          </div>
+ 
+          <!-- 9. COSTOS Y ANALISIS-->
+          <div id="tab-costos" class="tab-content overflow-y-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 shrink-0">
+                <div class="bg-white p-6 rounded-xl shadow border border-teal-100 flex items-center gap-4"><div class="bg-teal-100 p-4 rounded-full text-teal-600"><i data-lucide="boxes" class="w-8 h-8"></i></div><div><h3 class="font-bold text-gray-500 text-xs uppercase tracking-wider">Valor de Inventario Actual</h3><p class="text-3xl font-black text-teal-700" id="costo-inv-total">$0.00</p></div></div>
+                <div class="bg-white p-6 rounded-xl shadow border border-red-100 flex items-center gap-4"><div class="bg-red-100 p-4 rounded-full text-red-600"><i data-lucide="wrench" class="w-8 h-8"></i></div><div><h3 class="font-bold text-gray-500 text-xs uppercase tracking-wider">Mano de Obra Histórica</h3><p class="text-3xl font-black text-red-700" id="costo-mo-total">$0.00</p></div></div>
+                <div class="bg-white p-6 rounded-xl shadow border border-indigo-100 flex items-center gap-4"><div class="bg-indigo-100 p-4 rounded-full text-indigo-600"><i data-lucide="calculator" class="w-8 h-8"></i></div><div><h3 class="font-bold text-gray-500 text-xs uppercase tracking-wider">Costo Total (Repuestos + MO)</h3><p class="text-3xl font-black text-indigo-700" id="costo-global-total">$0.00</p></div></div>
+              </div>
+ 
+              <!-- Desglose de Costos Histórico -->
+              <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden flex flex-col mb-6 shrink-0">
+                <div class="bg-slate-50 border-b p-4 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700">Desglose de Costos de Mantenimiento (Histórico / Facturación)</h3>
+                      <div class="flex bg-white rounded-lg border border-gray-300 shadow-sm p-1">
+                          <div class="flex items-center pl-2 pr-1 text-gray-500"><i data-lucide="calendar" class="w-4 h-4"></i></div>
+                        <select id="filter-costos-year" class="bg-transparent border-none outline-none text-sm font-bold text-gray-700 cursor-pointer" onchange="renderCostos()">
+                            <option value="">Todos los años</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                          <div class="border-l mx-1 border-gray-300"></div>
+                        <select id="filter-costos-month" class="bg-transparent border-none outline-none text-sm font-bold text-gray-700 cursor-pointer pr-2" onchange="renderCostos()">
+                            <option value="">Mes</option>
+                            <option value="01">Ene</option>
+                            <option value="02">Feb</option>
+                            <option value="03">Mar</option>
+                            <option value="04">Abr</option>
+                            <option value="05">May</option>
+                            <option value="06">Jun</option>
+                            <option value="07">Jul</option>
+                            <option value="08">Ago</option>
+                            <option value="09">Sep</option>
+                            <option value="10">Oct</option>
+                            <option value="11">Nov</option>
+                            <option value="12">Dic</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-y-auto max-h-[400px] p-0">
+                      <table class="w-full text-left border-collapse">
+                         <thead class="bg-slate-100 border-b text-xs text-gray-600 sticky top-0 shadow-sm z-10">
+                             <tr>
+                                 <th class="p-3">Fecha</th>
+                                 <th class="p-3">ID OT / Tipo</th>
+                                 <th class="p-3">Equipo</th>
+                                 <th class="p-3">Responsable (M.O)</th>
+                                 <th class="p-3 text-right">Costo Repuestos</th>
+                                 <th class="p-3 text-right">Costo Base Prev.</th>
+                                 <th class="p-3 text-right">Costo M.O</th>
+                                 <th class="p-3 text-right font-bold text-blue-700">Total OT</th>
+                             </tr>
+                         </thead>
+                         <tbody id="costos-mo-tbody" class="divide-y text-sm"></tbody>
+                    </table>
+                  </div>
+              </div>
+ 
+              <!-- NUEVO: 4 Preguntas Solicitadas (Guía de Interpretación) -->
+              <div class="bg-white p-6 rounded-xl shadow border border-blue-200 mt-2 shrink-0">
+                <h3 class="text-xl font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="book-open" class="text-blue-500 w-6 h-6"></i> Guía de Interpretación y Eficiencia (Analítica CMMS)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 hover:shadow-md transition">
+                          <h4 class="font-black text-blue-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="bar-chart-3" class="w-6 h-6 text-blue-600"></i> 1. ¿Cómo se mide la efectividad y eficiencia del mantenimiento?</h4>
+                          <p class="text-sm text-gray-700 text-justify leading-relaxed">
+                              La efectividad se mide mediante el cumplimiento de los Planes Preventivos (reducir el backlog o atrasos) y el <strong>OEE</strong> (Overall Equipment Effectiveness). La eficiencia se evalúa mediante KPIs como el <strong>MTBF</strong> (Tiempo Medio Entre Fallas - mientras más alto, mejor) y el <strong>MTTR</strong> (Tiempo Medio de Reparación - mientras más bajo, mejor), indicando qué tan rápido el equipo de LACAPANCO resuelve los problemas y previene futuras paradas.
+                        </p>
+                    </div>
+ 
+                    <div class="bg-emerald-50 p-5 rounded-xl border border-emerald-100 hover:shadow-md transition">
+                          <h4 class="font-black text-emerald-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="coins" class="w-6 h-6 text-emerald-600"></i> 2. ¿Por qué se analiza el costo asociado al mantenimiento?</h4>
+                          <p class="text-sm text-gray-700 text-justify leading-relaxed">
+                              El análisis de costos (Repuestos + Mano de Obra + Paradas) permite determinar la rentabilidad del ciclo de vida de un equipo. Si el costo acumulado de mantenimiento correctivo supera el costo de reemplazo, justifica una nueva inversión. Además, permite optimizar el presupuesto anual, garantizando que el inventario no tenga sobrestock ni desabastecimiento de repuestos críticos.
+                        </p>
+                    </div>
+ 
+                    <div class="bg-indigo-50 p-5 rounded-xl border border-indigo-100 hover:shadow-md transition">
+                          <h4 class="font-black text-indigo-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="shield-check" class="w-6 h-6 text-indigo-600"></i> 3. Evaluación de la confiabilidad y disponibilidad</h4>
+                          <p class="text-sm text-gray-700 text-justify leading-relaxed">
+                          <strong>Disponibilidad:</strong> Es el porcentaje de tiempo que un equipo está listo para operar sobre el tiempo total planificado de producción. <br><br>
+                          <strong>Confiabilidad:</strong> Es la probabilidad de que el equipo funcione sin fallar durante un periodo específico. Un equipo puede tener alta disponibilidad (se repara rápido) pero baja confiabilidad (falla muchas veces). Ambas se garantizan ejecutando las OTs a tiempo.
+                        </p>
+                      </div>
+ 
+                      <div class="bg-purple-50 p-5 rounded-xl border border-purple-100 hover:shadow-md transition">
+                          <h4 class="font-black text-purple-800 mb-2 flex items-center gap-2 text-base"><i data-lucide="pie-chart" class="w-6 h-6 text-purple-600"></i> 4. Herramientas para la interpretación de indicadores</h4>
+                          <p class="text-sm text-gray-700 text-justify leading-relaxed">
+                              En LACAPANCO utilizamos <strong>Dashboards en tiempo real</strong> para visualizar tendencias y cuellos de botella. El <strong>Gráfico de Dona de OTs</strong> actúa como un diagrama de estados (Kanban). El gráfico de <strong>Planificadas vs Correctivas</strong> (Ideal: 80% Prev / 20% Corr) permite interpretar la proactividad del departamento. SCADA provee la herramienta física de comportamiento de variables frente a estos indicadores.
+                        </p>
+                    </div>
+ 
+                </div>
+            </div>
+        </div>
+ 
+         <!-- 10. RRHH -->
+         <div id="tab-rrhh" class="tab-content">
+            <div class="flex justify-between mb-4">
+                <p class="text-gray-500">Personal Operativo Interdepartamental.</p>
+                <button onclick="abrirModal('modalPersonal', 'formPersonal')" class="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 flex gap-2"><i data-lucide="user-plus"></i> Nuevo Colaborador</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="rrhh-container"></div>
+            </div>
+ 
+        </div>
+    </main>
+ 
+    <!-- ================= MODALES GENÉRICOS ================= -->
+    <div id="modalAlerta" class="fixed inset-0 bg-black/70 hidden z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl text-center max-w-sm w-full border-t-8 border-t-red-600">
+           <i data-lucide="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4 animate-bounce"></i>
+          <h3 class="font-black text-xl mb-3 text-gray-800" id="alerta-titulo">¡ATENCIÓN!</h3>
+           <p class="text-gray-600 mb-6 font-medium text-sm" id="alerta-msg"></p>
+        <button onclick="cerrarModal('modalAlerta')" class="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-red-700 transition">Entendido</button>
+      </div>
+    </div>
+    
+    <!-- MODAL DE ÉXITO GENÉRICO -->
+    <div id="modalExito" class="fixed inset-0 bg-black/70 hidden z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl text-center max-w-sm w-full border-t-8 border-t-green-500">
+           <i data-lucide="check-circle" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
+          <h3 class="font-black text-xl mb-3 text-gray-800" id="exito-titulo">¡ÉXITO!</h3>
+           <p class="text-gray-600 mb-6 font-medium text-sm" id="exito-msg"></p>
+        <button onclick="cerrarModal('modalExito')" class="w-full bg-green-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-700 transition">Aceptar</button>
+     </div>
+    </div>
+ 
+    <!-- MODAL SINCRONIZACIÓN MANUAL -->
+    <div id="modalSync" class="fixed inset-0 bg-black/80 hidden z-[150] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl relative border-t-8 border-blue-600">
+            <button type="button" onclick="cerrarModal('modalSync')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-gray-100 rounded-full p-1"><i data-lucide="x"></i></button>
+            <h3 class="text-xl font-black mb-2 pb-2 text-slate-800 flex items-center gap-2" id="sync-titulo"><i data-lucide="refresh-cw" class="text-blue-600"></i> Sincronización</h3>
+            <p class="text-sm text-gray-600 mb-4" id="sync-desc"></p>
+            <textarea id="sync-texto" class="w-full h-56 border border-gray-300 p-3 rounded-lg text-[10px] text-gray-500 font-mono bg-slate-50 mb-4 focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner break-all" placeholder="Pega el código aquí..."></textarea>
+            
+            <button id="btn-sync-copiar" onclick="copiarSync()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-black text-base shadow-lg transition flex justify-center items-center gap-2"><i data-lucide="copy"></i> Copiar Código al Portapapeles</button>
+            
+            <button id="btn-sync-restaurar" onclick="restaurarSync()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-black text-base shadow-lg transition flex justify-center items-center gap-2 hidden"><i data-lucide="clipboard-paste"></i> Restaurar Base de Datos</button>
+        </div>
+    </div>
+ 
+    <!-- MODAL EQUIPOS -->
+    <div id="modalEquipo" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative">
+         <button type="button" onclick="cerrarModal('modalEquipo')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">Datos del Equipo</h3>
+         <form id="formEquipo" onsubmit="guardarEquipo(event)" class="space-y-3">
+             <input type="hidden" id="eq-edit-id">
+             <input type="hidden" id="eq-img-b64">
+               
+             <div class="flex gap-2 items-center mb-3">
+                 <div class="w-16 h-16 bg-slate-100 rounded border overflow-hidden flex items-center justify-center">
+                     <img id="eq-preview-img" class="w-full h-full object-cover hidden">
+                     <i id="eq-preview-icon" data-lucide="image" class="w-8 h-8 text-slate-300"></i>
+                 </div>
+                 <div class="flex-1">
+                     <label class="block text-xs font-bold text-gray-600">Foto del Equipo (Opcional)</label>
+                     <input type="file" onchange="convertirImagen(event, 'eq-img-b64', 'eq-preview-img', 'eq-preview-icon')" accept="image/*" class="w-full border p-1.5 rounded text-xs">
+                 </div>
+             </div>
+ 
+             <div><label class="block text-xs font-bold text-gray-600">ID / Código</label><input type="text" id="eq-id" required class="w-full border p-2 rounded uppercase"></div>
+             <div><label class="block text-xs font-bold text-gray-600">Nombre del Equipo</label><input type="text" id="eq-nombre" required class="w-full border p-2 rounded"></div>
+             <div>
+                 <label class="block text-xs font-bold text-gray-600">Área (Solo las oficiales)</label>
+                 <select id="eq-area" required class="w-full border p-2 rounded font-bold text-blue-800">
+                   <option>Panes y Dulces</option><option>Latas</option><option>Carnes</option><option>Congelados</option>
+                 </select>
+             </div>
+             <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold">Guardar Equipo</button>
+         </form>
+     </div>
+    </div>
+    
+    <div id="modalInventario" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative max-h-[95vh] overflow-y-auto">
+        <button type="button" onclick="cerrarModal('modalInventario')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+            <h3 class="text-lg font-bold mb-4 border-b pb-2">Datos del Artículo</h3>
+            <form id="formRepuesto" onsubmit="guardarRepuesto(event)" class="space-y-3">
+            <input type="hidden" id="rep-edit-id">
+            <input type="hidden" id="rep-img-b64">
+              
+            <div>
+                <label class="block text-xs font-bold text-gray-600">Tipo de Artículo</label>
+                <select id="rep-tipo" required class="w-full border p-2 rounded font-bold text-teal-800">
+                    <option value="Repuesto">Repuesto de Maquinaria</option>
+                        <option value="Insumo de Sanidad">Insumo de Sanidad</option>
+                        <option value="Consumible">Consumible General</option>
+                    <option value="Lubricante">Lubricante</option>
+                        <option value="Herramienta">Herramienta</option>
+                        <option value="EPP">EPP (Equipo Prot. Personal)</option>
+                </select>
+            </div>
+ 
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-gray-600">Código</label>
+                    <input type="text" id="rep-codigo" required class="w-full border p-2 rounded uppercase">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-gray-600">Imagen (Opcional)</label>
+                    <input type="file" onchange="convertirImagen(event, 'rep-img-b64')" accept="image/*" class="w-full border p-1.5 rounded text-xs">
+                </div>
+            </div>
+            <div><label class="block text-xs font-bold text-gray-600">Nombre</label><input type="text" id="rep-nombre" required class="w-full border p-2 rounded uppercase"></div>
+            <div><label class="block text-xs font-bold text-gray-600">Descripción (Opcional)</label><textarea id="rep-desc" rows="2" class="w-full border p-2 rounded text-xs" placeholder="Detalles técnicos..."></textarea></div>
+            <div><label class="block text-xs font-bold text-gray-600">Equipo Asociado (Opcional para Insumos)</label><select id="rep-equipo" class="w-full border p-2 rounded"><option value="">Ninguno / Uso General</option></select></div>
+            <div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-gray-600">Stock Actual</label><input type="number" id="rep-stock" required min="0" class="w-full border p-2 rounded"></div><div class="flex-1"><label class="block text-xs font-bold text-gray-600">Mínimo</label><input type="number" id="rep-min" required min="1" class="w-full border p-2 rounded"></div></div>
+            <div><label class="block text-xs font-bold text-gray-600">Costo Unitario ($)</label><input type="number" id="rep-costo" required min="0" step="0.01" class="w-full border p-2 rounded"></div>
+            <div><label class="block text-xs font-bold text-gray-600">URL del Proveedor (Opcional)</label><input type="url" id="rep-url" class="w-full border p-2 rounded text-blue-600" placeholder="https://..."></div>
+            <button type="submit" class="w-full bg-teal-600 text-white py-2 rounded font-bold">Guardar Artículo</button>
+            </form>
+        </div>
+    </div>
+ 
+    <!-- Modal para Ver Imagen y Descripción del Repuesto -->
+    <div id="modalVerImgDesc" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl max-w-sm w-full relative shadow-2xl">
+        <button onclick="cerrarModal('modalVerImgDesc')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-white rounded-full p-1 shadow-sm"><i data-lucide="x"></i></button>
+          <h3 id="ver-img-titulo" class="font-bold text-lg mb-2 text-slate-800 pr-6"></h3>
+           <p id="ver-img-id" class="text-xs text-teal-600 font-bold mb-4 uppercase"></p>
+         <div class="bg-slate-100 rounded-lg h-48 flex items-center justify-center mb-4 overflow-hidden border border-slate-200">
+            <img id="ver-img-src" src="" class="w-full h-full object-cover hidden">
+            <i id="ver-img-icon" data-lucide="image-off" class="w-12 h-12 text-slate-300"></i>
+        </div>
+          <h4 class="font-bold text-sm text-gray-600 mb-1">Descripción:</h4>
+           <p id="ver-img-desc" class="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-100 min-h-[60px]"></p>
+    </div>
+    </div>
+ 
+    <div id="modalPersonal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative">
+        <button type="button" onclick="cerrarModal('modalPersonal')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          <h3 class="text-lg font-bold mb-4 border-b pb-2">Colaborador</h3>
+        <form id="formPersonal" onsubmit="guardarPersonal(event)" class="space-y-3">
+            <input type="hidden" id="per-edit-id">
+            <input type="hidden" id="per-img-b64">
+            <div class="flex gap-2 items-center">
+                <div class="w-16 h-16 bg-slate-100 rounded-full border overflow-hidden flex items-center justify-center shrink-0">
+                    <img id="per-preview-img" class="w-full h-full object-cover hidden">
+                    <i id="per-preview-icon" data-lucide="user" class="w-8 h-8 text-slate-300"></i>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-gray-600">Foto (Opcional)</label>
+                    <input type="file" onchange="convertirImagen(event, 'per-img-b64', 'per-preview-img', 'per-preview-icon')" accept="image/*" class="w-full border p-1.5 rounded text-xs">
+                </div>
+            </div>
+            <div><label class="block text-xs font-bold text-gray-600">Nombre Completo</label><input type="text" id="per-nombre" required class="w-full border p-2 rounded"></div>
+            <div class="flex gap-2">
+                <div class="flex-1"><label class="block text-xs font-bold text-gray-600">Departamento</label><select id="per-dpto" required class="w-full border p-2 rounded"><option>Mantenimiento</option><option>Calidad</option><option>Sanidad</option><option>Administración</option></select></div>
+                <div class="flex-1"><label class="block text-xs font-bold text-gray-600">Ocupación</label><select id="per-rol" class="w-full border p-2 rounded"><option>Administrador</option><option>Supervisor</option><option>Técnico</option><option>Ayudante</option></select></div>
+            </div>
+            <div><label class="block text-xs font-bold text-gray-600">Valor Hora ($)</label><input type="number" id="per-valor" required min="1" step="0.5" class="w-full border p-2 rounded"></div>
+            <div><label class="block text-xs font-bold text-gray-600">Descripción / Detalles (Opcional)</label><textarea id="per-desc" rows="2" class="w-full border p-2 rounded text-xs" placeholder="Certificaciones, turnos..."></textarea></div>
+            
+            <!-- SOLO ADMIN: Crear Usuario y Contraseña -->
+            <div id="auth-fields" class="hidden border-t pt-3 mt-3">
+                <p class="text-xs font-bold text-blue-600 mb-2"><i data-lucide="shield-check" class="inline w-4 h-4 mr-1"></i> Credenciales de Acceso al Sistema</p>
+                <div class="flex gap-2">
+                    <div class="flex-1"><label class="block text-xs font-bold text-gray-600">Usuario</label><input type="text" id="per-user" class="w-full border p-2 rounded" placeholder="Ej: jcastro"></div>
+                    <div class="flex-1"><label class="block text-xs font-bold text-gray-600">Contraseña</label><input type="text" id="per-pass" class="w-full border p-2 rounded" placeholder="Ej: Password123"></div>
+                </div>
+            </div>
+ 
+            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded font-bold">Guardar Personal</button>
+        </form>
+    </div>
+    </div>
+ 
+    <!-- MODAL DE ADELANTAR OT -->
+    <div id="modalAdelantar" class="fixed inset-0 bg-black/60 hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-sm shadow-2xl relative border-t-8 border-t-orange-500">
+        <button type="button" onclick="cerrarModal('modalAdelantar')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          <h3 class="text-lg font-black mb-4 pb-2 border-b text-orange-600">Adelantar Mantenimiento</h3>
+        <form id="formAdelantar" onsubmit="ejecutarAdelanto(event)" class="space-y-3">
+            <input type="hidden" id="adelantar-ot-id">
+            <div><label class="block text-xs font-bold text-gray-600">Fecha Nueva Propuesta</label><input type="date" id="adelanto-fecha" required class="w-full border p-2 rounded font-bold text-blue-700"></div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600">¿Quién solicita el adelanto?</label>
+                <select id="adelanto-quien-select" class="w-full border p-2 rounded hidden"></select>
+                <input type="text" id="adelanto-quien-input" class="w-full border p-2 rounded hidden" disabled>
+            </div>
+            <div><label class="block text-xs font-bold text-gray-600">Motivo del adelanto</label><textarea id="adelanto-motivo" required class="w-full border p-2 rounded" rows="2" placeholder="Desgaste prematuro, ventana de producción..."></textarea></div>
+            <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded font-bold">Adelantar Programación</button>
+        </form>
+    </div>
+    </div>
+ 
+    <div id="modalOT" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4"><div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative"><button type="button" onclick="cerrarModal('modalOT')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button><h3 class="text-lg font-bold mb-4 border-b pb-2 text-indigo-600">Programar OT Preventiva</h3><form id="formOT" onsubmit="guardarOT(event)" class="space-y-3"><div><label class="block text-xs font-bold text-gray-600">1. Equipo</label><select id="ot-equipo" required class="w-full border p-2 rounded bg-indigo-50" onchange="cargarPlanesSelectOT()"></select></div><div><label class="block text-xs font-bold text-gray-600">2. Plan a Ejecutar</label><select id="ot-plan" required class="w-full border p-2 rounded bg-indigo-50"><option value="">Seleccione equipo primero</option></select></div><div><label class="block text-xs font-bold text-gray-600">Técnico Responsable (Mantenimiento)</label><select id="ot-tecnico" required class="w-full border p-2 rounded"></select></div><div class="flex gap-2"><div class="flex-1"><label class="block text-xs font-bold text-gray-600">Fecha Prog.</label><input type="date" id="ot-fecha" required class="w-full border p-2 rounded"></div><div class="flex-1"><label class="block text-xs font-bold text-gray-600">T. Estimado (h)</label><input type="number" id="ot-tiempo" required min="0.5" step="0.5" class="w-full border p-2 rounded" value="1"></div></div><button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700">Generar OT Preventiva</button></form></div></div>
+    
+    <div id="modalParada" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative">
+        <button type="button" onclick="cerrarModal('modalParada')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          <h3 class="text-lg font-bold mb-4 border-b pb-2 text-red-600">Reporte de Falla (No Planificada)</h3>
+        <form id="formParada" onsubmit="guardarParada(event)" class="space-y-3">
+            <div><label class="block text-xs font-bold text-gray-600">Equipo Afectado</label><select id="par-equipo" required class="w-full border p-2 rounded"></select></div>
+            <div class="flex gap-2">
+                <div class="flex-1"><label class="block text-xs font-bold text-gray-600">Dpto. que reporta</label><select id="par-dpto" required class="w-full border p-2 rounded font-bold" onchange="filtrarPersonalFalla()"><option value="">Seleccione...</option><option>Mantenimiento</option><option>Calidad</option><option>Sanidad</option></select></div>
+                <div class="flex-1"><label class="block text-xs font-bold text-gray-600">Encargado (Técnico)</label><select id="par-tecnico" required class="w-full border p-2 rounded"><option value="">Seleccione Dpto primero</option></select></div>
+            </div>
+            <div><label class="block text-xs font-bold text-gray-600">Motivo principal</label><select id="par-motivo" required class="w-full border p-2 rounded"><option value="Fallo Mecánico">Fallo Mecánico</option><option value="Fallo Eléctrico">Fallo Eléctrico</option><option value="Alarma de Calidad">Alarma de Calidad</option><option value="Limpieza / Atasco">Limpieza / Atasco</option><option value="Otros">Otros</option></select></div>
+            <div><label class="block text-xs font-bold text-gray-600">Descripción de Falla</label><textarea id="par-desc" required class="w-full border p-2 rounded" rows="2" placeholder="Describa el problema..."></textarea></div>
+            <div><label class="block text-xs font-bold text-gray-600">Tiempo estimado (Horas)</label><input type="number" id="par-tiempo" required min="0.5" step="0.5" class="w-full border p-2 rounded"></div>
+            <button type="submit" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">Generar OT Correctiva</button>
+        </form>
+    </div>
+    </div>
+    
+    <!-- COMPRA MANUAL -->
+    <div id="modalCompra" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4"><div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative"><button type="button" onclick="cerrarModal('modalCompra')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button><h3 class="text-lg font-bold mb-4 border-b pb-2">Registrar Compra</h3><form id="formCompra" onsubmit="guardarCompra(event)" class="space-y-3"><div><label class="block text-xs font-bold text-gray-600">1. Filtrar Equipo (Deje en blanco para Insumos Generales)</label><select id="comp-equipo-filter" class="w-full border p-2 rounded" onchange="cargarRepuestosCompra()"></select></div><div><label class="block text-xs font-bold text-gray-600">2. Seleccionar Artículo</label><select id="comp-repuesto" required class="w-full border p-2 rounded bg-purple-50 font-bold"><option value="">Cargando...</option></select></div><div><label class="block text-xs font-bold text-gray-600">Cantidad a Comprar</label><input type="number" id="comp-cant" required min="1" class="w-full border p-2 rounded"></div><div><label class="block text-xs font-bold text-gray-600">Enlace Web</label><input type="url" id="comp-url" required class="w-full border p-2 rounded text-blue-600" placeholder="https://..."></div><button type="submit" class="w-full bg-purple-600 text-white py-2 rounded font-bold">Registrar Orden de Compra</button></form></div></div>
+    
+    <div id="modalCancelOT" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4"><div class="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl relative"><button type="button" onclick="cerrarModal('modalCancelOT')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button><h3 class="text-lg font-bold mb-4 border-b pb-2 text-red-600">Motivo de Cancelación</h3><form id="formCancelOT" onsubmit="ejecutarCancelacionOT(event)" class="space-y-3"><input type="hidden" id="cancel-ot-id"><div><label class="block text-xs font-bold text-gray-600">Indique el motivo por el cual cancela esta OT</label><textarea id="cancel-ot-motivo" required class="w-full border p-2 rounded" rows="3" placeholder="Falta de repuestos, error en programación..."></textarea></div><button type="submit" class="w-full bg-red-600 text-white py-2 rounded font-bold">Confirmar Cancelación</button></form></div></div>
+    
+    <!-- MODAL REVISIONES UNIVERSALES (SANIDAD / CALIDAD) -->
+    <div id="modalChecklistUniversal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 py-8">
+        <div class="bg-white rounded-xl w-full max-w-xl shadow-2xl flex flex-col max-h-full">
+         <div class="p-4 border-b flex justify-between items-center rounded-t-xl shrink-0" id="univ-header">
+            <h2 class="text-lg font-black text-white flex items-center gap-2" id="univ-titulo"><i data-lucide="clipboard-check"></i> Checklist</h2>
+            <button type="button" onclick="cerrarModal('modalChecklistUniversal')" class="text-white hover:text-gray-200"><i data-lucide="x"></i></button>
+        </div>
+         <div class="p-6 flex-1 overflow-y-auto">
+            <form id="formUniv" onsubmit="procesarChecklistUniversal(event)" class="space-y-4">
+                <input type="hidden" id="univ-ot-id">
+                <input type="hidden" id="univ-tipo-dept">
+                
+                <div class="mb-4">
+                      <label class="block text-xs font-bold text-gray-700 mb-1">Encargado de Revisión (Automático o Seleccionable por Admin)</label>
+                      <select id="univ-encargado" required class="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-50 font-bold focus:border-blue-500 hidden"></select>
+                     <input type="text" id="univ-encargado-input" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-100 font-bold hidden" disabled>
+                </div>
+ 
+                <div id="univ-tareas" class="space-y-2"></div>
+                
+                <!-- SECCIÓN DE INSUMOS SANIDAD (Solo Visible si Dept = Sanidad) -->
+                 <div id="univ-insumos-section" class="hidden border-t pt-4 mt-4 bg-teal-50 p-4 rounded border border-teal-100">
+                    <h4 class="font-bold text-teal-800 mb-3 flex items-center gap-2"><i data-lucide="spray-can" class="w-5 h-5"></i> Insumos de Sanidad Utilizados (Opcional)</h4>
+                    <p class="text-xs text-teal-600 mb-4">Seleccione los insumos usados en esta limpieza. Serán descontados del inventario y sumados al costo.</p>
+                     
+                     <div class="flex gap-2 items-end mb-4">
+                         <div class="flex-1">
+                           <label class="text-xs font-bold text-gray-600">Insumo</label>
+                           <select id="univ-insumo-sel" class="w-full border p-2 rounded bg-white text-sm"></select>
+                          </div>
+                         <div class="w-24">
+                           <label class="text-xs font-bold text-gray-600">Cant.</label>
+                           <input type="number" id="univ-insumo-cant" class="w-full border p-2 rounded bg-white text-sm text-center" min="1" value="1">
+                          </div>
+                       <button type="button" onclick="addInsumoSanidad()" class="bg-teal-500 text-white px-4 py-2 rounded font-bold text-sm hover:bg-teal-600">Añadir</button>
+                    </div>
+ 
+                    <div class="bg-white rounded border overflow-hidden">
+                         <table class="w-full text-left text-xs">
+                           <thead class="bg-gray-100 border-b"><tr><th class="p-2">Insumo</th><th class="p-2 text-center">Cant</th><th class="p-2 text-right">Costo Unit.</th><th class="p-2 text-center">Quitar</th></tr></thead>
+                           <tbody id="univ-insumos-list" class="divide-y"></tbody>
+                          </table>
+                    </div>
+                </div>
+ 
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow mt-4">Validar y Avanzar OT</button>
+                </form>
+            </div>
+        </div>
+    </div>
+ 
+    <!-- MODAL FIRMAS EN REVISIÓN (LOS 3 SUPERVISORES) -->
+    <div id="modalAprobarOT" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 py-8">
+        <div class="bg-white p-6 rounded-lg w-full max-w-4xl shadow-2xl relative max-h-full flex flex-col">
+        <button type="button" onclick="cerrarModal('modalAprobarOT')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          <h3 class="text-xl font-black mb-2 border-b pb-2 text-indigo-600 flex items-center gap-2 shrink-0"><i data-lucide="check-square"></i> Aprobación Final de OT (Firmas)</h3>
+            <p class="text-sm text-gray-600 mb-4 shrink-0">Se requieren las validaciones y firmas de los supervisores departamentales para proceder al cierre estadístico final y liberar el equipo en SCADA. La próxima OT se auto-generará si aplica.</p>
+            
+            <form id="formAprobarOT" onsubmit="procesarAprobacionOT(event)" class="space-y-4 flex-1 overflow-y-auto pr-2">
+             <input type="hidden" id="aprobar-ot-id">
+              
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Mant -->
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg flex flex-col">
+                    <h4 class="font-bold text-blue-800 text-xs uppercase mb-2">1. Mantenimiento</h4>
+                    <textarea id="aprobar-ot-mant" class="w-full border border-blue-300 p-2 rounded text-xs mb-2 flex-1" placeholder="Observaciones de Mantenimiento (Opcional)..."></textarea>
+                    <label class="block font-bold text-gray-700 mb-1 text-[10px]">Firma Supervisor</label>
+                    <div class="h-24 w-full firma-canvas relative bg-white"><canvas id="canvasFirma-mant" class="w-full h-full"></canvas><button type="button" onclick="limpiarFirmaMultiple('mant')" class="absolute bottom-1 right-1 text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">Borrar</button></div>
+                </div>
+                 <!-- Sanidad -->
+                 <div class="bg-teal-50 border border-teal-200 p-3 rounded-lg flex flex-col">
+                    <h4 class="font-bold text-teal-800 text-xs uppercase mb-2">2. Sanidad</h4>
+                    <textarea id="aprobar-ot-sanidad" class="w-full border border-teal-300 p-2 rounded text-xs mb-2 flex-1" placeholder="Observaciones de Sanidad (Opcional)..."></textarea>
+                    <label class="block font-bold text-gray-700 mb-1 text-[10px]">Firma Supervisor</label>
+                    <div class="h-24 w-full firma-canvas relative bg-white"><canvas id="canvasFirma-sanidad" class="w-full h-full"></canvas><button type="button" onclick="limpiarFirmaMultiple('sanidad')" class="absolute bottom-1 right-1 text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">Borrar</button></div>
+                </div>
+                 <!-- Calidad -->
+                 <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-lg flex flex-col">
+                    <h4 class="font-bold text-indigo-800 text-xs uppercase mb-2">3. Calidad</h4>
+                    <textarea id="aprobar-ot-calidad" class="w-full border border-indigo-300 p-2 rounded text-xs mb-2 flex-1" placeholder="Observaciones de Calidad (Opcional)..."></textarea>
+                    <label class="block font-bold text-gray-700 mb-1 text-[10px]">Firma Supervisor</label>
+                    <div class="h-24 w-full firma-canvas relative bg-white"><canvas id="canvasFirma-calidad" class="w-full h-full"></canvas><button type="button" onclick="limpiarFirmaMultiple('calidad')" class="absolute bottom-1 right-1 text-[9px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">Borrar</button></div>
+                </div>
+            </div>
+ 
+            <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg font-black text-lg hover:bg-green-700 shadow flex justify-center items-center gap-2 mt-4"><i data-lucide="lock"></i> Finalizar y Cerrar OT</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- MODAL GIGANTE DE EJECUCIÓN (CHECKLIST MANTENIMIENTO CON REPUESTOS) -->
+    <div id="modalEjecucionOT" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 py-10">
+        <div class="bg-white rounded-xl w-full max-w-4xl shadow-2xl flex flex-col h-full max-h-full">
+         <div class="p-4 border-b bg-gray-50 flex justify-between items-center rounded-t-xl shrink-0">
+            <div><h2 class="text-xl font-black text-blue-800" id="ejec-titulo">Ejecución de OT</h2><p class="text-sm text-gray-500 font-bold" id="ejec-subtitulo"></p></div>
+            <button type="button" onclick="cerrarModal('modalEjecucionOT')" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-full text-gray-600"><i data-lucide="x"></i></button>
+        </div>
+          
+         <div class="flex-1 overflow-y-auto p-6 bg-white" id="ejec-body">
+            <form id="formEjecucion" class="space-y-6">
+                <input type="hidden" id="ejec-ot-id">
+                <div id="ejec-checklist-container" class="space-y-6"></div>
+                
+                <div class="border-t pt-4">
+                    <label class="block font-bold text-gray-700 mb-2">Observaciones Generales (Opcional)</label>
+                    <textarea id="ejec-obs" class="w-full border p-3 rounded" rows="3" placeholder="Detalles, hallazgos o recomendaciones..."></textarea>
+                </div>
+ 
+                 <!-- SECCIÓN DE REPUESTOS -->
+                 <div class="border-t pt-4 bg-orange-50 p-4 rounded border border-orange-100">
+                    <h4 class="font-bold text-orange-800 mb-3 flex items-center gap-2"><i data-lucide="package-minus" class="w-5 h-5"></i> Repuestos e Insumos Utilizados (Opcional)</h4>
+                    <p class="text-xs text-orange-600 mb-4">Seleccione los artículos usados en esta orden. Serán descontados del inventario y sumados al costo.</p>
+                     
+                      <div class="flex gap-2 items-end mb-4">
+                          <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-600">Artículo</label>
+                            <select id="ejec-repuesto-sel" class="w-full border p-2 rounded bg-white text-sm"></select>
+                        </div>
+                          <div class="w-24">
+                            <label class="text-xs font-bold text-gray-600">Cant.</label>
+                            <input type="number" id="ejec-repuesto-cant" class="w-full border p-2 rounded bg-white text-sm text-center" min="1" value="1">
+                        </div>
+                        <button type="button" onclick="addRepuestoToEjec()" class="bg-orange-500 text-white px-4 py-2 rounded font-bold text-sm hover:bg-orange-600">Añadir</button>
+                    </div>
+ 
+                    <div class="bg-white rounded border overflow-hidden">
+                         <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-100 border-b"><tr><th class="p-2">Artículo</th><th class="p-2 text-center">Cant</th><th class="p-2 text-right">Costo Unit.</th><th class="p-2 text-center">Quitar</th></tr></thead>
+                            <tbody id="ejec-repuestos-list" class="divide-y"></tbody>
+                        </table>
+                    </div>
+                </div>
+ 
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                    <label class="block font-bold text-gray-700 mb-2">Firma del Técnico (Obligatorio)</label>
+                    <div class="h-40 w-full max-w-md firma-canvas relative mx-auto bg-white">
+                          <canvas id="canvasFirmaTecnico" class="w-full h-full"></canvas>
+                          <button type="button" onclick="limpiarFirma()" class="absolute bottom-2 right-2 text-[10px] bg-red-100 text-red-600 px-2 py-1 rounded font-bold">Borrar Firma</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+          
+         <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end shrink-0">
+            <button type="button" onclick="procesarEjecucionOT()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-black text-lg hover:bg-blue-700 shadow-lg flex items-center gap-2"><i data-lucide="check-circle"></i> Enviar a Revisión de Sanidad</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL CREADOR DINÁMICO DE PLANES -->
+    <div id="modalBuilderPlan" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-2xl shadow-2xl relative flex flex-col max-h-[90vh]">
+        <button type="button" onclick="cerrarModal('modalBuilderPlan')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500"><i data-lucide="x"></i></button>
+          <h3 class="text-xl font-bold mb-4 border-b pb-2 text-yellow-600">Generador de Checklist Estructurado</h3>
+         <div class="flex-1 overflow-y-auto pr-2 space-y-4" id="builder-container">
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="block text-xs font-bold text-gray-600">Equipo</label><select id="bld-equipo" class="w-full border p-2 rounded" disabled></select></div>
+              <div><label class="block text-xs font-bold text-gray-600">Frecuencia / Título</label><input type="text" id="bld-frec" class="w-full border p-2 rounded" placeholder="Ej: Checklist Semanal" required></div>
+            </div>
+            <div><label class="block text-xs font-bold text-gray-600">Costo Base ($) por Ejecutarlo</label><input type="number" id="bld-costo" class="w-full border p-2 rounded text-green-700 font-bold" placeholder="Valor del PM. Ej: 50.00" value="0.00" step="0.5" required></div>
+            <div class="border-t pt-4" id="bld-grupos">
+                <!-- Grupos Dinámicos -->
+              </div>
+            <button type="button" onclick="bldAgregarGrupo()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded text-xs font-bold w-full border border-dashed border-slate-400 hover:bg-slate-300">+ Agregar Nuevo Grupo (Sección)</button>
+        </div>
+         <div class="pt-4 border-t mt-4 shrink-0">
+            <button type="button" onclick="guardarPlanBuilder()" class="w-full bg-yellow-500 text-white py-3 rounded-lg font-black text-lg hover:bg-yellow-600 shadow-lg">Guardar Plan en Base de Datos</button>
+        </div>
+    </div>
+    </div>
+ 
+    <!-- CORE JS -->
+    <script>
+        // ==========================================
+        // 0. GENERADOR DE DATOS Y CONFIG
+        // ==========================================
+        function getSeedOTs() {
+            let historicas = [];
+           const equipos = ['DIV-01', 'ADK-01', 'FERM-01', 'MEZ-01', 'KON-01', 'RET-01', 'BDM-01', 'DEC-02', 'CUTR-01', 'COMP-01', 'RACK-01'];
+           const planes = {
+               'DIV-01': 'PLN-07', 'ADK-01': 'PLN-08', 'FERM-01': 'PLN-09', 'MEZ-01': 'PLN-10', 'KON-01': 'PLN-12', 'RET-01': 'PLN-13',
+               'BDM-01': 'PLN-01', 'DEC-02': 'PLN-05', 'CUTR-01': 'PLN-04', 'COMP-01': 'PLN-03', 'RACK-01': 'PLN-11'
+            };
+            const tecnicos = ['P01', 'P02', 'P03'];
+ 
+            let otCounter = 1000;
+            for(let anio = 2024; anio <= 2026; anio++) {
+               let mesMax = (anio === 2026) ? 7 : 12;
+               for(let mes = 1; mes <= mesMax; mes++) {
+                   let mesStr = String(mes).padStart(2, '0');
+ 
+                  equipos.forEach(eq => {
+                       let dia = Math.floor(Math.random() * 28) + 1;
+                       let fecha = `${anio}-${mesStr}-${String(dia).padStart(2,'0')}`;
+                     historicas.push({
+                            id: `OT-${otCounter++}`,
+                            tipo: 'Preventivo',
+                         equipoId: eq,
+                            desc: 'Mantenimiento Preventivo Programado',
+                         planId: planes[eq] || null,
+                         tecnicoId: tecnicos[Math.floor(Math.random()*tecnicos.length)],
+                            fecha: fecha,
+                         estado: 'finalizadas',
+                         tiempo: 1.5 + (Math.random()), 
+                         observacionesMant: 'Revisión completada sin anomalías destacables.',
+                         repuestos: [],
+                         costoTotal: 50 + Math.random() * 30
+                        });
+                   });
+ 
+                   for(let c = 0; c < 3; c++) {
+                       let eq = equipos[Math.floor(Math.random()*equipos.length)];
+                       let dia = Math.floor(Math.random() * 28) + 1;
+                       let fallaDesc = ['Atasco de producto', 'Fallo de motor/eléctrico', 'Ajuste de rodamientos', 'Fuga hidráulica/neumática'][Math.floor(Math.random()*4)];
+                      historicas.push({
+                            id: `OT-${otCounter++}`,
+                            tipo: 'Correctivo',
+                         equipoId: eq,
+                            desc: `Falla: ${fallaDesc}`,
+                         planId: null,
+                         tecnicoId: tecnicos[Math.floor(Math.random()*tecnicos.length)],
+                            fecha: `${anio}-${mesStr}-${String(dia).padStart(2,'0')}`,
+                         estado: 'finalizadas',
+                         tiempo: 2 + (Math.random() * 3), 
+                         observacionesMant: 'Se detuvo la producción para reemplazo de componente averiado.',
+                         repuestos: [{id: "LUB-01", cant: 1, nombre: "Grasa", costoUnitario: 180}],
+                          costoTotal: 180 + (4*6) + Math.random() * 50
+                       });
+                   }
+               }
+            }
+           return historicas;
+        }
+ 
+        const dbDefault = {
+         version: 9.4,
+         config: { logo: '' },
+         usuariosAuth: [
+             {nombre: 'Admin', user: 'admin', pass: 'Admin@2026!', rol: 'Administrador (acceso total)', dpto: 'Administración', personalId: 'P00'},
+              {nombre: 'José Castro', user: 'jcastro', pass: 'Manto@2026', rol: 'Supervisor de Mantenimiento', dpto: 'Mantenimiento', personalId: 'P01'},
+              {nombre: 'Ángel Serrano', user: 'aserrano', pass: 'Angel@2026', rol: 'Ayudante de Mantenimiento', dpto: 'Mantenimiento', personalId: 'P02'},
+              {nombre: 'Jorge Liam', user: 'jliam', pass: 'Jorge@2026', rol: 'Técnico de Mantenimiento', dpto: 'Mantenimiento', personalId: 'P03'},
+              {nombre: 'Tiffany Mendoza', user: 'tmendoza', pass: 'Tiffany@2026', rol: 'Ayudante de Sanidad', dpto: 'Sanidad', personalId: 'P04'},
+              {nombre: 'Madeline Araúz', user: 'marauz', pass: 'Madeline@2026', rol: 'Ayudante de Calidad', dpto: 'Calidad', personalId: 'P05'},
+              {nombre: 'Jules Vaughn', user: 'jvaughn', pass: 'Jules@2026', rol: 'Técnico de Calidad', dpto: 'Calidad', personalId: 'P06'},
+              {nombre: 'Rue Bennett', user: 'rbennett', pass: 'Rue@2026', rol: 'Técnico de Sanidad', dpto: 'Sanidad', personalId: 'P07'},
+              {nombre: 'Carmen Berzatto', user: 'cberzatto', pass: 'Carmen@2026', rol: 'Ayudante de Calidad', dpto: 'Calidad', personalId: 'P08'},
+              {nombre: 'Yelena Belova', user: 'ybelova', pass: 'Yelena@2026', rol: 'Ayudante de Sanidad', dpto: 'Sanidad', personalId: 'P09'}
+          ],
+         equipos: [
+               { id: 'DIV-01', nombre: 'Divisora', area: 'Panes y Dulces', scada: { status: 'stopped', baseTemp: 25, baseRpm: 60, basePresion: 10 } },
+               { id: 'ADK-01', nombre: 'Embolsadora ADK', area: 'Panes y Dulces', scada: { status: 'running', baseTemp: 28, baseRpm: 40, basePresion: 80 } },
+               { id: 'FERM-01', nombre: 'Fermentador', area: 'Panes y Dulces', scada: { status: 'running', baseTemp: 38, baseRpm: 0, basePresion: 12 } },
+               { id: 'MEZ-01', nombre: 'Mezcladora', area: 'Panes y Dulces', scada: { status: 'running', baseTemp: 26, baseRpm: 30, basePresion: 0 } },
+               { id: 'KON-01', nombre: 'Reposador König', area: 'Panes y Dulces', scada: { status: 'running', baseTemp: 25, baseRpm: 15, basePresion: 0 } },
+               { id: 'RET-01', nombre: 'Unidad Retráctil', area: 'Panes y Dulces', scada: { status: 'running', baseTemp: 150, baseRpm: 10, basePresion: 0 } },
+               { id: 'BDM-01', nombre: 'Bodymaker', area: 'Latas', scada: { status: 'running', baseTemp: 45, baseRpm: 250, basePresion: 90 } },
+               { id: 'DEC-02', nombre: 'Decoradora 2 MEC', area: 'Latas', scada: { status: 'running', baseTemp: 35, baseRpm: 1200, basePresion: 900 } },
+               { id: 'CUTR-01', nombre: 'Cutter Seydelmann', area: 'Carnes', scada: { status: 'running', baseTemp: 18, baseRpm: 4500, basePresion: 15 } },
+               { id: 'COMP-01', nombre: 'Compresor HLF2/77', area: 'Congelados', scada: { status: 'running', baseTemp: 115, baseRpm: 1800, basePresion: 35 } },
+               { id: 'RACK-01', nombre: 'Racks', area: 'Congelados', scada: { status: 'stopped', baseTemp: 22, baseRpm: 0, basePresion: 0 } }
+          ],
+         planes_v2: [
+               { id: 'PLN-01', equipoId: 'BDM-01', frec: 'Checklist Mensual', costoPreventivo: 50, grupos: [{ nombre: 'SENSOR PRX3 SHORT CAN', tareas: ['1. Revisión física del sensor PRX3 short can, cable, conector y base', '2. Verificar en el programa que cambie su condición el sensor PRX3 short can'] }] },
+               { id: 'PLN-02', equipoId: 'BDM-01', frec: 'Checklist Trimestral', costoPreventivo: 120, grupos: [{ nombre: 'SENSORES (PRX4, PRX5, PRX6, PRX10)', tareas: ['1. Revisión física PRX4 Cup infeed', '2. Revisión física PRX5 Reverse cup', '3. Revisión física PRX6 Bucket jam', '4. Revisión física PRX10 Can made', '5. Verificar en programa que cada sensor cambie su condición'] }, { nombre: 'SENSORES DE MOVIMIENTO DEL VOLANTE', tareas: ['6. Sensores detección movimiento (motor detenido max 10min)', '7. Abrir cubierta protección', '8. Revisión PRX1 Flywheel no motion 1', '9. Revisión PRX2 Flywheel no motion 2', '10. Revisión distancia y alineación volante', '11. Cerrar cubierta correctamente'] }, { nombre: 'MOTORES PRINCIPALES', tareas: ['12. Termografía en 4 puntos', '13. Guardar imágenes térmicas', '14. Aplicar 2 bombazos de grasa (Mobil Polyrex)', '15. Revisar empalmes', '16. Apriete tornillería base/tensión', '17. Inspección general', '18. Medición voltajes L1 [Número]', '19. Medición voltajes L2 [Número]', '20. Medición voltajes L3 [Número]', '21. Medición amperios L1 [Número]', '22. Medición amperios L2 [Número]', '23. Medición amperios L3 [Número]', '24. Medición vibración global LC [Número]', '25. Medición vibración global LV [Número]', '26. Anotar frecuencia [Número]', '27. Anotar velocidad [Número]'] }, { nombre: 'MOTORES DE BOMBAS (PRINCIPAL, RECIRCULACIÓN, TRIMMER, FILTRO)', tareas: ['28-34. Revisión física, térmica, grasa y apriete', '35-47. Medición voltajes/amperios de todas las bombas', '48. Vibración global', '49. Anotar velocidad [Número]'] }, { nombre: 'PANEL DE CONTROL', tareas: ['50-56. Apriete tuercas, limpieza interna/externa, arreglo cableado, validar luces indicadoras'] }, { nombre: 'GUARDAS DE SEGURIDAD', tareas: ['57-63. Escaneo, habilitar señal Studio 5000, limpiar plug-ins, verificar actuadores, revisar cableado Point IO #3. (GS1 a GS10)'] }] },
+               { id: 'PLN-03', equipoId: 'COMP-01', frec: 'Checklist Diario', costoPreventivo: 15, grupos: [{ nombre: 'INSPECCIÓN GENERAL', tareas: ['1. Fugas de aire', '2. Fugas de aceite', '3. Ruidos anormales', '4. Vibraciones excesivas', '5. Estado de mangueras y conexiones', '6. Funcionamiento alarmas automáticas', '7. Limpieza del área', '8. Válvulas de seguridad'] }, { nombre: 'LUBRICACIÓN', tareas: ['9. Nivel de aceite mediante visor', '10. Calidad del aceite'] }, { nombre: 'INSPECCIÓN OPERACIONAL', tareas: ['11. Presión LP [Número]', '12. Temp después cilindro LP [Número]', '13. Temp después enfriador LP [Número]', '14. Temp después cilindro HP [Número]', '15. Temp después enfriador HP [Número]', '16. Presión de descarga [Número]', '17. Funcionamiento estable'] }, { nombre: 'SISTEMA DE ENFRIAMIENTO', tareas: ['18. Limpieza externa de enfriadores', '19. Libre circulación de aire', '20. Funcionamiento ventilador', '21. Acumulación de suciedad'] }, { nombre: 'SISTEMA DE AIRE', tareas: ['22. Filtro de admisión de aire', '23. Obstrucción en líneas', '24. Válvula antirretorno'] }] },
+               { id: 'PLN-04', equipoId: 'CUTR-01', frec: 'Checklist Mensual', costoPreventivo: 60, grupos: [{ nombre: 'LUBRICACIÓN', tareas: ['1. Lubricación y limpieza del eje motor', '2. Revisión y ajuste de aceite', '3. Lubricación de cuchillas'] }, { nombre: 'SISTEMA MECÁNICO', tareas: ['4. Limpieza de estructura', '5. Revisión de gabinete del motor', '6. Revisión y ajuste de correas trapezoidal', '7. Inspección de retenedoras', '8. Revisión del sistema hidráulico'] }, { nombre: 'SISTEMA DE INYECCIÓN', tareas: ['9. Revisión y ajuste de inyección de agua', '10. Revisión y ajuste inyección joystick'] }, { nombre: 'SISTEMA ELÉCTRICO Y CONTROL', tareas: ['11. Revisión de panel de control', '12. Verificación de sistema de seguridad'] }] },
+               { id: 'PLN-05', equipoId: 'DEC-02', frec: 'Checklist Quincenal', costoPreventivo: 45, grupos: [{ nombre: 'LIMPIEZA PROFUNDA DE CILINDROS', tareas: ['1. Limpieza profunda en parte posterior de cilindros', '2. Retirar exceso de tinta con alcohol', '3. Asegurar área limpia', '4. Disponer residuos en tanque'] }, { nombre: 'DECORADORA 1', tareas: ['5. Juego de cilindros A', '6. Juego de cilindros B', '7. Juego de cilindros C'] }, { nombre: 'DECORADORA 2', tareas: ['8. Juego A', '9. Juego B', '10. Juego C'] }] },
+               { id: 'PLN-06', equipoId: 'DEC-02', frec: 'Checklist Semanal', costoPreventivo: 35, grupos: [{ nombre: 'BANDAS Y GUÍAS', tareas: ['1. Revisar banda de pre-giro de mandriles', '2. Revisar banda pre-giro barnizadora', '3. Revisar guías de alta velocidad'] }, { nombre: 'SISTEMA DE INKERS', tareas: ['4. Revisar uniones rotativas (dublin) de los inkers', '5. Revisar presión aceite inkers micro (900 PSI)', '6. Revisar presión aceite inkers analógico (900 PSI)'] }, { nombre: 'CHUMACERAS Y LUBRICACIÓN', tareas: ['7. Presión grasa chumaceras micro (1975 PSI)', '8. Presión grasa analógico (2000 PSI)', '9. Validar inyectores y mangueras'] }, { nombre: 'VISCOSÍMETRO', tareas: ['10. Revisar funcionamiento', '11. Verificar calibración y lectura'] }, { nombre: 'SEGURIDAD, INOCUIDAD Y AMBIENTE', tareas: ['12. Evitar prestar herramientas', '13. Reportar desgastes', '14. Disponer materiales y residuos correctamente'] }] },
+               { id: 'PLN-07', equipoId: 'DIV-01', frec: 'Checklist Mensual', costoPreventivo: 40, grupos: [{ nombre: 'LUBRICACIÓN', tareas: ['1. Lubricación y limpieza de cadenas', '2. Engrase de rodamientos'] }, { nombre: 'SISTEMA MECÁNICO', tareas: ['3. Estado de tolva', '4. Estado rodillo y balineras', '5. Cadenas (tensar)', '6. Sprockets', '7. Sist. Lubricación', '8. Correas y bandas', '9. Motor-reductor'] }, { nombre: 'SISTEMA ELÉCTRICO', tareas: ['10. Motor eléctrico', '11. Cableado (control y fuerza)', '12. Panel de control', '13. Amperaje L1 [Número]', '14. Amperaje L2 [Número]', '15. Amperaje L3 [Número]'] }, { nombre: 'SEGURIDADES', tareas: ['16. Paros de emergencia', '17. Sensores de covers'] }, { nombre: 'ESTRUCTURA', tareas: ['18. Tornillos, tuercas', '19. Probar funcionamiento'] }] },
+               { id: 'PLN-08', equipoId: 'ADK-01', frec: 'Checklist Mensual', costoPreventivo: 55, grupos: [{ nombre: 'LUBRICACIÓN', tareas: ['1. Lubricación de cadenas', '2. Engrase rodamientos', '3. Revisar aceite reductor'] }, { nombre: 'SISTEMA MECÁNICO', tareas: ['4. Banda transportadora', '5. Rodillos y balineras', '6. Cadenas y sprockets', '7. Cuchilla y contra cuchilla', '8. Asentamiento cuchilla', '9. Tornillos de sujeción cuchillas/resistencias'] }, { nombre: 'SISTEMA ELÉCTRICO', tareas: ['10. Limpieza motores eléctricos', '11. Panel principal', '12. Control de temperatura y sondas', '13. Resistencias eléctricas', '14. Pantalla de operación', '15. Relays, fusibles, breakers', '16. Sensores (Inductivos/Ópticos)'] }, { nombre: 'SEGURIDADES', tareas: ['17. Paro de emergencia', '18. Sensores puertas y acrílicos'] }, { nombre: 'ESTRUCTURA', tareas: ['19-21. Acrílicos, tornillos faltantes, pruebas'] }] },
+               { id: 'PLN-09', equipoId: 'FERM-01', frec: 'Checklist Mensual', costoPreventivo: 35, grupos: [{ nombre: 'SISTEMA MECÁNICO', tareas: ['1. Limpieza resistencia calor', '2. Limpieza resistencia humedad', '3. Electroválvula agua', '4. Manguera agua', '5. Empaques de puertas', '6. Cerraduras', '7. Tuberías desagüe'] }, { nombre: 'SISTEMA ELÉCTRICO', tareas: ['8. Panel eléctrico', '9. Iluminación interior', '10. Pantalla control', '11. Seguridades bimetálicas'] }, { nombre: 'ESTRUCTURA', tareas: ['12. Comprobar tornillos', '13. Probar equipo'] }] },
+               { id: 'PLN-10', equipoId: 'MEZ-01', frec: 'Checklist Mensual', costoPreventivo: 45, grupos: [{ nombre: 'MEDICIÓN', tareas: ['1. Amperaje [25A-30A] L1 [Número]', '2. Amperaje [25A-30A] L2 [Número]', '3. Amperaje [25A-30A] L3 [Número]'] }, { nombre: 'LUBRICACIÓN', tareas: ['4. Rodamientos', '5. Conos y columnas de elevación'] }, { nombre: 'SISTEMA MECÁNICO', tareas: ['6. Aceite central hidráulica', '7. Mangueras hidráulicas', '8. Soportes de bases', '9. Desgaste paleta', '10. Correa del gancho'] }, { nombre: 'SISTEMA ELÉCTRICO', tareas: ['11. Switch de presión', '12. Cableado', '13. Filtros aire panel'] }, { nombre: 'SEGURIDADES', tareas: ['14. Sensor lector de Artesa', '15. Sensor anillo de seguridad', '16. Paro emergencia'] }, { nombre: 'ESTRUCTURA', tareas: ['17-18. Limpieza y pruebas'] }] },
+               { id: 'PLN-11', equipoId: 'RACK-01', frec: 'Checklist Mensual', costoPreventivo: 20, grupos: [{ nombre: 'ESTRUCTURA Y CAPACIDAD', tareas: ['1. Identificación de carga soportada', '2. Señalización visible', '3. Estructuras acorde a P&ID'] }, { nombre: 'SOLDADURAS Y UNIONES', tareas: ['4. Agrietamiento soldaduras', '5. Unión viga/paleta', '6. Limpieza en soldaduras', '7. Uniones atornilladas'] }, { nombre: 'PINTURA Y RECUBRIMIENTO', tareas: ['8. Desprendimiento pintura', '9. Espesor/calidad pintura'] }, { nombre: 'DAÑOS Y SOBRECARGA', tareas: ['10-11. Signos de sobrecarga estructura y carriles'] }, { nombre: 'ANCLAJES Y NIVELACIÓN', tareas: ['12-14. Pernos de anclaje, placas nivelación, anclajes al piso'] }] },
+               { id: 'PLN-12', equipoId: 'KON-01', frec: 'Checklist Mensual', costoPreventivo: 50, grupos: [{ nombre: 'LUBRICACIÓN', tareas: ['1. Aceite en reductores', '2. Engrase rodamientos', '3. Lubricar cadenas'] }, { nombre: 'SISTEMA MECÁNICO', tareas: ['4. Estado bandas azules', '5. Estado cadenas (tensión)', '6. Balineras', '7. Sprockets de teflón', '8. Ejes/rodillos', '9. Cintas de transporte', '10. Funcionamiento reductores'] }, { nombre: 'SISTEMA ELÉCTRICO', tareas: ['11. Limpieza motores', '12. Sensores proximidad', '13. Panel de control', '14. Pantalla táctil', '15. Cableado'] }, { nombre: 'SEGURIDADES', tareas: ['16. Paro emergencia', '17. Sensores seguridad en cubiertas'] }, { nombre: 'ESTRUCTURA', tareas: ['18-20. Acrílicos, tornillos, pruebas'] }] },
+               { id: 'PLN-13', equipoId: 'RET-01', frec: 'Checklist Mensual', costoPreventivo: 35, grupos: [{ nombre: 'LUBRICACIÓN', tareas: ['1. Aceite reductor', '2. Cadena', '3. Rodillos/balineras'] }, { nombre: 'SISTEMA MECÁNICO', tareas: ['4. Correas azules', '5. Tensión cadenas', '6. Rodillos bandas', '7. Rodamientos'] }, { nombre: 'SISTEMA ELÉCTRICO', tareas: ['8. Sensores proximidad', '9. Panel control', '10. Servomotor', '11. Micros laterales de ajuste'] }, { nombre: 'SEGURIDADES', tareas: ['12. Sensores cubierta', '13. Paro emergencia', '14. Tornillos/arandelas', '15. Pruebas'] }] }
+          ],
+         personal: [
+              { id: 'P00', nombre: 'Admin', dpto: 'Administración', rol: 'Administrador', valor: 20.00, img: '', desc: 'Administrador del sistema' },
+              { id: 'P01', nombre: 'José Castro', dpto: 'Mantenimiento', rol: 'Supervisor', valor: 8.00, img: '', desc: 'Supervisor de Mantenimiento General' },
+              { id: 'P02', nombre: 'Ángel Serrano', dpto: 'Mantenimiento', rol: 'Ayudante', valor: 6.00, img: '', desc: 'Especialista en Líneas de Producción' },
+              { id: 'P03', nombre: 'Jorge Liam', dpto: 'Mantenimiento', rol: 'Técnico', valor: 6.00, img: '', desc: 'Técnico en Refrigeración' },
+              { id: 'P04', nombre: 'Tiffany Mendoza', dpto: 'Sanidad', rol: 'Ayudante', valor: 4.00, img: '', desc: 'Limpieza y saneamiento profundo' },
+              { id: 'P05', nombre: 'Madeline Araúz', dpto: 'Calidad', rol: 'Ayudante', valor: 4.00, img: '', desc: 'Verificación de parámetros e inocuidad' },
+              { id: 'P06', nombre: 'Jules Vaughn', dpto: 'Calidad', rol: 'Técnico', valor: 6.00, img: '', desc: 'Inocuidad' },
+              { id: 'P07', nombre: 'Rue Bennett', dpto: 'Sanidad', rol: 'Técnico', valor: 6.00, img: '', desc: 'Certificación en microbiota' },
+              { id: 'P08', nombre: 'Carmen Berzatto', dpto: 'Calidad', rol: 'Ayudante', valor: 4.00, img: '', desc: 'Calidad de producto' },
+              { id: 'P09', nombre: 'Yelena Belova', dpto: 'Sanidad', rol: 'Ayudante', valor: 4.00, img: '', desc: 'Saneamiento' }
+          ],
+         inventario: [
+              { id: 'ADK-R01', nombre: 'Mordazas de Sellado Transversal', tipo: 'Repuesto', equipoId: 'ADK-01', stock: 12, min: 2, costo: 250.00, url: 'https://adk.com.ar/', img: '', desc: 'Mordazas en V para sellado perfecto.' },
+              { id: 'ADK-R02', nombre: 'Resistencia Tubular (ADK)', tipo: 'Repuesto', equipoId: 'ADK-01', stock: 5, min: 2, costo: 45.00, url: '', img: '', desc: 'Resistencia de calor' },
+              { id: 'BDM-R01', nombre: 'Sensor PRX3 Short Can', tipo: 'Repuesto', equipoId: 'BDM-01', stock: 5, min: 2, costo: 120.00, url: '', img: '', desc: 'Sensor de proximidad inductivo para latas.' },
+              { id: 'BDM-R02', nombre: 'Grasa Lubricante Especial', tipo: 'Lubricante', equipoId: 'BDM-01', stock: 10, min: 4, costo: 85.00, url: '', img: '', desc: 'Alta temperatura' },
+              { id: 'DEC-R01', nombre: 'Rodillo Inker Analógico', tipo: 'Repuesto', equipoId: 'DEC-02', stock: 3, min: 4, costo: 450.00, url: '', img: '', desc: 'Rodillo para transferencia de tinta.' },
+              { id: 'DEC-R02', nombre: 'Sello Hidráulico', tipo: 'Repuesto', equipoId: 'DEC-02', stock: 1, min: 3, costo: 120.00, url: '', img: '', desc: 'Retenedora' },
+              { id: 'DIV-R01', nombre: 'Banda Azul de Arrastre', tipo: 'Repuesto', equipoId: 'DIV-01', stock: 2, min: 2, costo: 75.00, url: '', img: '', desc: 'Banda transportadora' },
+              { id: 'MEZ-R01', nombre: 'Correa de Transmisión', tipo: 'Repuesto', equipoId: 'MEZ-01', stock: 8, min: 3, costo: 30.00, url: '', img: '', desc: 'Poleas principales' },
+              { id: 'CUTR-R01', nombre: 'Cuchilla Seydelmann', tipo: 'Repuesto', equipoId: 'CUTR-01', stock: 4, min: 2, costo: 320.00, url: '', img: '', desc: 'Acero de alto impacto' },
+              { id: 'COMP-R01', nombre: 'Filtro de Aire', tipo: 'Repuesto', equipoId: 'COMP-01', stock: 6, min: 2, costo: 40.00, url: '', img: '', desc: 'Admisión' },
+              { id: 'LUB-01', nombre: 'Grasa Mobil Polyrex EM (Cubeta)', tipo: 'Lubricante', equipoId: '', stock: 2, min: 3, costo: 180.00, url: '', img: '', desc: 'Grasa para motores eléctricos.' },
+              { id: 'SAN-01', nombre: 'Sanitizante Químico QAC (Galón)', tipo: 'Insumo de Sanidad', equipoId: '', stock: 15, min: 10, costo: 15.00, url: '', img: '', desc: 'Aprobado para área de alimentos.' },
+              { id: 'SAN-02', nombre: 'Alcohol Isopropílico 70% (Galón)', tipo: 'Insumo de Sanidad', equipoId: '', stock: 8, min: 5, costo: 12.00, url: '', img: '', desc: 'Desinfección de superficies rápidas.' },
+              { id: 'CAL-01', nombre: 'Tiras Reactivas pH', tipo: 'Consumible', equipoId: '', stock: 20, min: 5, costo: 8.00, url: '', img: '', desc: 'Verificación de calidad.' }
+          ],
+         ots: [
+              ...getSeedOTs(),
+              { id: 'OT-9001', tipo: 'Preventivo', equipoId: 'BDM-01', desc: 'Checklist Mensual', planId: 'PLN-01', tecnicoId: 'P02', fecha: new Date().toISOString().split('T')[0], estado: 'pendientes', tiempo: 1.5, observacionesMant: '', observacionesCalidad: '', observacionesSanidad: '', repuestos: [], costoTotal: 0 },
+              { id: 'OT-9002', tipo: 'Correctivo', equipoId: 'DEC-02', desc: 'Falla: Falla Mecánica - Atasco', planId: null, tecnicoId: 'P01', fecha: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], estado: 'pendientes', tiempo: 2.0, observacionesMant: '', observacionesCalidad: '', observacionesSanidad: '', repuestos: [], costoTotal: 0 },
+              { id: 'OT-9003', tipo: 'Preventivo', equipoId: 'DIV-01', desc: 'Checklist Mensual', planId: 'PLN-07', tecnicoId: 'P03', fecha: new Date().toISOString().split('T')[0], estado: 'proceso', tiempo: 1.5, observacionesMant: '', observacionesCalidad: '', observacionesSanidad: '', repuestos: [], costoTotal: 0 },
+              { id: 'OT-9004', tipo: 'Preventivo', equipoId: 'MEZ-01', desc: 'Checklist Mensual', planId: 'PLN-10', tecnicoId: 'P02', fecha: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0], estado: 'sanidad', tiempo: 1.0, observacionesMant: '', observacionesCalidad: '', observacionesSanidad: '', repuestos: [], costoTotal: 0 },
+              { id: 'OT-9005', tipo: 'Correctivo', equipoId: 'COMP-01', desc: 'Falla: Presión baja', planId: null, tecnicoId: 'P01', fecha: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0], estado: 'revision', tiempo: 3.0, observacionesMant: '', observacionesCalidad: '', observacionesSanidad: '', repuestos: [], costoTotal: 0 }
+          ], 
+         ots_canceladas: [
+              { id: 'OT-8888', otDesc: 'Cambio de rodamiento', motivo: 'Falta de repuesto' },
+              { id: 'OT-8889', otDesc: 'Lubricación Cadenas', motivo: 'Equipo desincorporado temporalmente' }
+          ], 
+         cotizaciones: [
+              { id: 'COM-1001', repuestoId: 'ADK-R01', cant: 10, url: 'https://adk.com.ar', estado: 'Finalizada' },
+              { id: 'COM-1002', repuestoId: 'SAN-01', cant: 20, url: '', estado: 'Enviada' },
+              { id: 'COM-1003', repuestoId: 'LUB-01', cant: 5, url: '', estado: 'En Proceso' },
+              { id: 'COM-1004', repuestoId: 'DEC-R02', cant: 3, url: '', estado: 'Enviada' },
+              { id: 'COM-1005', repuestoId: 'CUTR-R01', cant: 2, url: '', estado: 'Finalizada' },
+              { id: 'COM-1006', repuestoId: 'ADK-R02', cant: 8, url: '', estado: 'Finalizada' }
+          ],
+         notas_comms: [
+              { id: 'N1', fecha: '2025-10-15', autor: 'Admin', dpto: 'Administración', texto: 'Se ha actualizado el stock de insumos de sanidad.' },
+              { id: 'N2', fecha: '2026-03-20', autor: 'José Castro', dpto: 'Mantenimiento', texto: 'Recordar purgar el compresor HLF2/77 todos los viernes.' },
+              { id: 'N3', fecha: new Date().toISOString().split('T')[0], autor: 'Madeline Araúz', dpto: 'Calidad', texto: 'Por favor prestar atención a la vibración del Bodymaker, merma del 2%.' }
+          ]
+        };
+ 
+        const DB_KEY = 'lacapanco_db_v9_4';
+        let db = JSON.parse(localStorage.getItem(DB_KEY));
+        
+        if(!db || db.version < 9.4) {
+            db = dbDefault;
+          localStorage.setItem(DB_KEY, JSON.stringify(db));
+        }
+ 
+        // ==========================================
+        // FUNCIONES PUENTE PARA FIREBASE (NUEVO)
+        // ==========================================
+        // Exponemos el estado inicial por si Firebase lo necesita subir
+        window.appDB = db;
+
+        // Función que Firebase llamará cuando descargue datos
+        window.actualizarDesdeFirebase = function(datosFirebase) {
+            if(datosFirebase && datosFirebase.version) {
+                db = datosFirebase;
+                localStorage.setItem(DB_KEY, JSON.stringify(db));
+                refreshUI();
+            }
+        };
+
+        function saveDB() {
+            localStorage.setItem(DB_KEY, JSON.stringify(db)); 
+            refreshUI(); 
+            // NUEVO: Aquí enviamos la info a la nube
+            if(window.sincronizarConFirebase) {
+                window.sincronizarConFirebase(db);
+            }
+        }
+ 
+        // ==========================================
+        // 1. SISTEMA DE LOGIN Y PERMISOS
+        // ==========================================
+        let currentUser = null;
+ 
+        function checkAuth() {
+           const sessionUser = sessionStorage.getItem('lacapanco_user');
+           if(sessionUser) {
+               currentUser = JSON.parse(sessionUser);
+              document.getElementById('loginOverlay').classList.add('hidden');
+              document.getElementById('hdr-user-name').innerText = currentUser.nombre;
+              document.getElementById('hdr-user-rol').innerText = currentUser.dpto;
+               
+                // Cargar imagen de usuario logueado
+                const userDb = db.personal.find(p => p.id === currentUser.personalId);
+                if(userDb && userDb.img) {
+                  document.getElementById('hdr-user-img').src = userDb.img;
+                   document.getElementById('hdr-user-img').classList.remove('hidden');
+                  document.getElementById('hdr-user-icon').classList.add('hidden');
+                } else {
+                  document.getElementById('hdr-user-img').classList.add('hidden');
+                  document.getElementById('hdr-user-icon').classList.remove('hidden');
+                }
+ 
+                // Cargar logo empresa
+                if(db.config.logo) {
+                  document.getElementById('custom-logo').src = db.config.logo;
+                  document.getElementById('custom-logo').classList.remove('hidden');
+                  document.getElementById('default-logo').classList.add('hidden');
+                }
+ 
+               refreshUI();
+           } else {
+              document.getElementById('loginOverlay').classList.remove('hidden');
+           }
+        }
+ 
+        function procesarLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+            const validUser = db.usuariosAuth.find(x => x.user === u && x.pass === p);
+            
+            if(validUser) {
+                currentUser = validUser;
+              sessionStorage.setItem('lacapanco_user', JSON.stringify(validUser));
+              document.getElementById('loginOverlay').classList.add('hidden');
+              document.getElementById('loginForm').reset();
+              document.getElementById('loginError').classList.add('hidden');
+               
+              document.getElementById('exito-titulo').innerText = "¡Bienvenid@!";
+              document.getElementById('exito-msg').innerText = `¡Bienvenid@ ${currentUser.nombre}, ${currentUser.rol}. Que tenga un día productivo!`;
+              document.getElementById('modalExito').classList.remove('hidden');
+              document.getElementById('modalExito').classList.add('flex');
+               
+                checkAuth();
+            } else {
+                const errEl = document.getElementById('loginError');
+                errEl.innerText = "Usuario o contraseña incorrectos.";
+              errEl.classList.remove('hidden');
+                setTimeout(() => errEl.classList.add('hidden'), 3500);
+            }
+        }
+ 
+        function cerrarSesion() {
+           if(confirm("¿Estás seguro de que deseas salir de la sesión?")) {
+              sessionStorage.removeItem('lacapanco_user');
+                currentUser = null;
+              document.getElementById('loginForm').reset();
+              document.getElementById('loginOverlay').classList.remove('hidden');
+           }
+        }
+ 
+        function checkPermission(requiredDpto) {
+            if(!currentUser) return false;
+          if(currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor')) return true;
+            return currentUser.dpto === requiredDpto;
+        }
+ 
+        // ==========================================
+        // 2. EXPORTAR/IMPORTAR POR PORTAPAPELES (NUEVO)
+        // ==========================================
+        
+        function utf8_to_b64(str) {
+            return window.btoa(unescape(encodeURIComponent(str)));
+        }
+ 
+        function b64_to_utf8(str) {
+            return decodeURIComponent(escape(window.atob(str)));
+        }
+ 
+        function abrirModalSync(modo) {
+           abrirModal('modalSync', '');
+            const txtArea = document.getElementById('sync-texto');
+            const btnCopiar = document.getElementById('btn-sync-copiar');
+            const btnRestaurar = document.getElementById('btn-sync-restaurar');
+            const titulo = document.getElementById('sync-titulo');
+            const desc = document.getElementById('sync-desc');
+ 
+            if(modo === 'exportar') {
+                titulo.innerText = "Exportar Datos (Código Seguro)";
+                desc.innerText = "Copia este texto y envíalo a tu otra PC (por correo, bloc de notas, etc.). Luego, pégalo allá usando la opción 'Pegar Datos'.";
+                
+                // Generamos un string base64 seguro para evitar cualquier corrupción
+                txtArea.value = utf8_to_b64(JSON.stringify(db));
+                txtArea.readOnly = true;
+                
+               btnCopiar.classList.remove('hidden');
+               btnRestaurar.classList.add('hidden');
+            } else {
+                titulo.innerText = "Importar Datos";
+                desc.innerText = "Pega aquí el código de respaldo generado en tu otra PC.";
+                txtArea.value = "";
+                txtArea.readOnly = false;
+                
+               btnCopiar.classList.add('hidden');
+               btnRestaurar.classList.remove('hidden');
+            }
+        }
+ 
+        function copiarSync() {
+            const txtArea = document.getElementById('sync-texto');
+            txtArea.select();
+           document.execCommand('copy');
+           mostrarAlerta("¡Código copiado correctamente! Envíalo a tu otra PC.");
+        }
+ 
+        function restaurarSync() {
+            const txtArea = document.getElementById('sync-texto');
+            const base64Str = txtArea.value.trim();
+            
+            if(!base64Str) {
+               mostrarAlerta("Por favor, pega el código primero.");
+                return;
+            }
+ 
+            try {
+                const jsonStr = b64_to_utf8(base64Str);
+                const obj = JSON.parse(jsonStr);
+ 
+                if (obj && typeof obj === 'object' && obj.equipos) {
+                   if(!obj.version) obj.version = 9.4;
+                    db = obj;
+                    saveDB();
+                   mostrarAlerta("Base de datos importada correctamente. El sistema se reiniciará en 2 segundos.");
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                   mostrarAlerta("El código pegado no contiene el formato esperado del sistema LACAPANCO.");
+                }
+            } catch(error) {
+               console.error("Detalle del error al restaurar:", error);
+               mostrarAlerta("Error de lectura: El código pegado está incompleto o fue modificado accidentalmente.");
+            }
+        }
+ 
+        setInterval(() => { const d = new Date(); document.getElementById('clock').innerText = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'}); }, 1000);
+ 
+        function mostrarAlerta(msg) {
+          document.getElementById('alerta-msg').innerText = msg;
+          document.getElementById('modalAlerta').classList.remove('hidden');
+          document.getElementById('modalAlerta').classList.add('flex');
+        }
+ 
+        function convertirImagen(evt, targetId, previewImgId = null, previewIconId = null) {
+           const file = evt.target.files[0];
+           if (file) {
+             const reader = new FileReader();
+             reader.onload = function(e) {
+              document.getElementById(targetId).value = e.target.result;
+                 if (previewImgId) {
+                     const img = document.getElementById(previewImgId);
+                     img.src = e.target.result;
+                   img.classList.remove('hidden');
+                   if(previewIconId) document.getElementById(previewIconId).classList.add('hidden');
+                 }
+             };
+           reader.readAsDataURL(file);
+           }
+        }
+ 
+        // Cambio de Logo
+        function cambiarLogo() {
+            if(currentUser && currentUser.rol.includes('Administrador')) {
+              document.getElementById('logo-file').click();
+            }
+        }
+        function guardarLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                   db.config.logo = e.target.result;
+                   saveDB();
+                  document.getElementById('custom-logo').src = db.config.logo;
+                  document.getElementById('custom-logo').classList.remove('hidden');
+                  document.getElementById('default-logo').classList.add('hidden');
+                };
+              reader.readAsDataURL(file);
+            }
+        }
+ 
+        // ==========================================
+        // 3. TABS & UI CORE (Optimizadas)
+        // ==========================================
+        function switchTab(tabId) {
+         if(!currentUser) { checkAuth(); return; }
+       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+       document.getElementById('tab-' + tabId).classList.add('active');
+       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active', 'bg-slate-800'));
+         const btn = document.querySelector(`.nav-btn[data-target="${tabId}"]`);
+         if(btn) btn.classList.add('active', 'bg-slate-800');
+         const titles = { dashboard: 'Dashboard Operativo (KPIs Generales)', scada: 'Planta y SCADA en Vivo', equipos: 'Árbol Jerárquico de Equipos', checklists: 'Planes de Trabajo Estandarizados', ots: 'Kanban Operativo', calendario: 'Calendario Mensual', inventario: 'Inventario Completo', cotizaciones: 'Gestión de Compras', costos: 'Análisis Financiero y Estratégico', rrhh: 'Personal de Planta' };
+       document.getElementById('top-title').innerText = titles[tabId];
+         refreshUI();
+         if(tabId === 'calendario') initCalendarioSelects();
+        }
+ 
+        function refreshUI() {
+         if(!currentUser) return;
+         
+         const activeTabElement = document.querySelector('.tab-content.active');
+         if (!activeTabElement) return;
+         const tabId = activeTabElement.id;
+ 
+         actualizarSelects();
+ 
+         // Solo renderiza la pestaña activa para evitar lag y sobrecarga
+         if(tabId === 'tab-dashboard') renderDashboard();
+         else if(tabId === 'tab-scada') renderSCADA();
+         else if(tabId === 'tab-equipos') renderEquiposTree();
+         else if(tabId === 'tab-checklists') { renderChecklistsHome(); if(eqActualPlan) renderPlanesActivos(); }
+         else if(tabId === 'tab-ots') renderKanban();
+         else if(tabId === 'tab-calendario') renderCalendario();
+         else if(tabId === 'tab-inventario') renderInventario();
+         else if(tabId === 'tab-cotizaciones') renderCotizaciones();
+         else if(tabId === 'tab-costos') renderCostos();
+         else if(tabId === 'tab-rrhh') renderRRHH();
+ 
+         lucide.createIcons();
+        }
+ 
+        function actualizarSelects() {
+         const eqOpts = db.equipos.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+         const perOptsMant = db.personal.filter(p=>p.dpto==='Mantenimiento').map(p => `<option value="${p.id}">${p.nombre} (${p.rol})</option>`).join('');
+         
+       if(document.getElementById('rep-equipo')) document.getElementById('rep-equipo').innerHTML = `<option value="">Ninguno / Uso General</option>` + eqOpts;
+       if(document.getElementById('filter-inv-eq')) document.getElementById('filter-inv-eq').innerHTML = `<option value="">Todos los equipos</option>` + eqOpts;
+       if(document.getElementById('ot-equipo')) document.getElementById('ot-equipo').innerHTML = `<option value="">Seleccione Equipo...</option>` + eqOpts;
+       if(document.getElementById('par-equipo')) document.getElementById('par-equipo').innerHTML = `<option value="">Seleccione Equipo...</option>` + eqOpts;
+         
+       if(document.getElementById('ot-tecnico')) document.getElementById('ot-tecnico').innerHTML = perOptsMant;
+         
+       if(document.getElementById('filter-compra-eq')) document.getElementById('filter-compra-eq').innerHTML = `<option value="">Todos los equipos</option>` + eqOpts;
+       if(document.getElementById('comp-equipo-filter')) document.getElementById('comp-equipo-filter').innerHTML = `<option value="">(Todos) Seleccione Equipo...</option>` + eqOpts;
+       if(document.getElementById('bld-equipo')) document.getElementById('bld-equipo').innerHTML = eqOpts;
+        }
+ 
+        function filtrarPersonalFalla() {
+         const dpto = document.getElementById('par-dpto').value;
+         const select = document.getElementById('par-tecnico');
+         if(!dpto) { select.innerHTML = '<option value="">Seleccione Dpto primero</option>'; return; }
+         const opts = db.personal.filter(p=>p.dpto===dpto).map(p => `<option value="${p.id}">${p.nombre} (${p.rol})</option>`).join('');
+         select.innerHTML = opts || '<option value="">Sin personal registrado</option>';
+        }
+ 
+        // --- DASHBOARD OPERATIVO ---
+        let chartOTs = null, chartTipos = null;
+        function renderDashboard() {
+         const hoyStr = new Date().toISOString().split('T')[0];
+         
+         // Cálculos KPIs 
+         const compArr = db.ots.filter(o => o.estado === 'finalizadas');
+         const openArr = db.ots.filter(o => o.estado !== 'finalizadas' && o.estado !== 'canceladas');
+         const atrasadasArr = db.ots.filter(o => o.estado !== 'finalizadas' && o.fecha < hoyStr);
+         const correctivasArr = db.ots.filter(o => o.tipo === 'Correctivo');
+         const lowStockArr = db.inventario.filter(r => r.stock < r.min);
+         const eqOn = db.equipos.filter(e => e.scada.status === 'running').length;
+         
+         const disp = db.equipos.length > 0 ? Math.round((eqOn / db.equipos.length) * 100) : 0;
+         const mtbf = correctivasArr.length > 0 ? Math.round(720 / correctivasArr.length) : 720;
+         const mttr = correctivasArr.length > 0 ? (correctivasArr.reduce((a,b)=>a+(b.tiempo||1),0)/correctivasArr.length).toFixed(1) : 0;
+ 
+       document.getElementById('kpi-ots-comp').innerText = compArr.length;
+       document.getElementById('kpi-ots-open').innerText = openArr.length;
+       document.getElementById('kpi-ots-atrasadas').innerText = atrasadasArr.length;
+       document.getElementById('kpi-stock').innerText = lowStockArr.length;
+       if(document.getElementById('kpi-eq-on')) document.getElementById('kpi-eq-on').innerText = eqOn;
+       if(document.getElementById('kpi-eq-off')) document.getElementById('kpi-eq-off').innerText = db.equipos.length - eqOn;
+       if(document.getElementById('kpi-ots-canc')) document.getElementById('kpi-ots-canc').innerText = db.ots_canceladas.length;
+       if(document.getElementById('kpi-disp')) document.getElementById('kpi-disp').innerText = disp + "%";
+       if(document.getElementById('kpi-mtbf')) document.getElementById('kpi-mtbf').innerText = mtbf + "h";
+       if(document.getElementById('kpi-mttr')) document.getElementById('kpi-mttr').innerText = mttr + "h";
+ 
+         // Poblar listas
+         const divAb = document.getElementById('dash-list-abiertas');
+         if(divAb) divAb.innerHTML = openArr.slice(0, 10).map(o => `<div class="border-b border-blue-50 pb-1 mb-1"><span class="font-bold text-blue-700">${o.id}</span> - <span class="truncate">${o.desc}</span></div>`).join('') || '<p class="text-gray-400">Sin OTs abiertas</p>';
+ 
+         const divAt = document.getElementById('dash-list-atrasadas');
+         if(divAt) divAt.innerHTML = atrasadasArr.map(o => `<div class="border-b border-red-50 pb-1 mb-1 flex justify-between"><div><span class="font-bold text-red-700">${o.id}</span> - <span class="truncate">${o.desc}</span></div><span class="text-gray-500 font-bold shrink-0">${o.fecha}</span></div>`).join('') || '<p class="text-gray-400">Sin OTs atrasadas</p>';
+ 
+         const divCo = document.getElementById('dash-list-correctivas');
+         if(divCo) divCo.innerHTML = correctivasArr.slice(-10).reverse().map(o => `<div class="border-b border-rose-50 pb-1 mb-1"><span class="font-bold text-rose-700">${o.id}</span> - <span class="truncate">${o.desc}</span></div>`).join('') || '<p class="text-gray-400">Sin OTs correctivas</p>';
+ 
+         const divCp = document.getElementById('dash-list-completadas');
+         if(divCp) divCp.innerHTML = compArr.slice(-10).reverse().map(o => `<div class="border-b border-green-50 pb-1 mb-1"><span class="font-bold text-green-700">${o.id}</span> - <span class="truncate">${o.desc}</span></div>`).join('') || '<p class="text-gray-400">Sin OTs completadas</p>';
+ 
+         const divSb = document.getElementById('dash-list-stock-bajo');
+         if(divSb) divSb.innerHTML = lowStockArr.map(r => `<div class="border-b border-orange-50 pb-1 mb-1"><span class="font-bold text-orange-700">${r.id}</span>: <span class="truncate">${r.nombre}</span> <br>Stock: <span class="text-red-600 font-bold">${r.stock}</span> (Min: ${r.min})</div>`).join('') || '<p class="text-gray-400">Stock normal</p>';
+ 
+         // Alertas de Cancelación
+         const alertsBox = document.getElementById('dashboard-alerts');
+         alertsBox.innerHTML = '';
+       db.ots_canceladas.slice(-5).forEach(c => {
+             alertsBox.innerHTML += `<div class="text-xs bg-purple-50 text-purple-800 border-l-4 border-l-purple-500 p-2 rounded shadow-sm mb-1"><strong>Cancelada:</strong> ${c.otDesc} <br><span class="text-gray-500">Motivo: ${c.motivo}</span></div>`;
+         });
+       if(alertsBox.innerHTML==='') alertsBox.innerHTML = `<p class="text-xs text-gray-400 p-2 text-center">No hay cancelaciones recientes.</p>`;
+ 
+         // Tablón Interdepartamental (Automático con currentUser)
+         const commsBox = document.getElementById('dash-comms');
+         commsBox.innerHTML = '';
+       db.notas_comms.slice().reverse().forEach(n => {
+             let dptoFallback = n.dpto || n.autor;
+             let autorNombre = n.dpto ? n.autor : 'Usuario Viejo';
+             let colorClass = dptoFallback === 'Mantenimiento' ? 'text-blue-800 bg-blue-50 border-blue-100' : (dptoFallback === 'Sanidad' ? 'text-teal-800 bg-teal-50 border-teal-100' : (dptoFallback === 'Administración' ? 'text-slate-800 bg-slate-100 border-slate-200' : 'text-indigo-800 bg-indigo-50 border-indigo-100'));
+             commsBox.innerHTML += `<div class="${colorClass} p-2 rounded border"><div class="flex justify-between items-center mb-1"><span class="font-bold">${autorNombre} <span class="text-[9px] font-normal">(${dptoFallback})</span></span><span class="text-[9px] text-gray-500">${n.fecha}</span></div><p class="text-gray-700 leading-tight">${n.texto}</p></div>`;
+         });
+         if(db.notas_comms.length === 0) commsBox.innerHTML = '<p class="text-gray-400 text-center py-2">Sin notas recientes</p>';
+ 
+         // Gráficas
+         if(chartOTs) chartOTs.destroy();
+         chartOTs = new Chart(document.getElementById('chartOTs'), {
+               type: 'doughnut',
+               data: { labels: ['Pendientes', 'Proceso', 'Sanidad', 'Calidad', 'Revisión', 'Finalizadas'], datasets: [{ data: [ db.ots.filter(o=>o.estado==='pendientes').length, db.ots.filter(o=>o.estado==='proceso').length, db.ots.filter(o=>o.estado==='sanidad').length, db.ots.filter(o=>o.estado==='calidad').length, db.ots.filter(o=>o.estado==='revision').length, db.ots.filter(o=>o.estado==='finalizadas').length ], backgroundColor: ['#94a3b8', '#3b82f6', '#14b8a6', '#6366f1', '#f97316', '#22c55e'] }] },
+               options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{position:'bottom', labels: {boxWidth:10, font:{size:9}}}} }
+            });
+ 
+         if(chartTipos) chartTipos.destroy();
+         chartTipos = new Chart(document.getElementById('chartTipos'), {
+             type: 'pie',
+             data: { labels: ['Preventivas', 'Correctivas'], datasets: [{ data: [ db.ots.filter(o=>o.tipo==='Preventivo').length, db.ots.filter(o=>o.tipo==='Correctivo').length ], backgroundColor: ['#6366f1', '#ef4444'] }] },
+             options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{position:'bottom'}} }
+            });
+        }
+ 
+        function agregarNotaComm() {
+           if(!currentUser) return;
+           const txt = document.getElementById('nueva-nota-comm').value;
+           if(!txt) return;
+           db.notas_comms.push({ id: 'N'+Date.now(), fecha: new Date().toISOString().split('T')[0], autor: currentUser.nombre, dpto: currentUser.dpto, texto: txt });
+         document.getElementById('nueva-nota-comm').value = '';
+           saveDB();
+        }
+ 
+        // --- SCADA ---
+        function renderSCADA() {
+         const cont = document.getElementById('scada-container');
+         if(!cont) return;
+         cont.innerHTML = '';
+         db.equipos.forEach(eq => {
+             const isOn = eq.scada.status === 'running';
+               
+               // CONDICIÓN SCADA BLOQUEO CORREGIDA: No bloquea si está en "pendientes" (programado), sino solo si está en trabajo activo (proceso/sanidad/calidad/revision)
+               const hasOT = db.ots.some(o => o.equipoId === eq.id && ['proceso', 'sanidad', 'calidad', 'revision'].includes(o.estado));
+               
+               const lockAlert = hasOT ? ' (BLOQUEADO POR MANTENIMIENTO)' : '';
+             
+               const temp = isOn ? (eq.scada.baseTemp + (Math.random() * 4 - 2)).toFixed(1) : (eq.scada.baseTemp > 30 ? '30.0' : eq.scada.baseTemp.toFixed(1));
+             const rpm = isOn ? Math.round(eq.scada.baseRpm + (Math.random() * (eq.scada.baseRpm*0.05))) : 0;
+             const presion = isOn ? (eq.scada.basePresion + (Math.random() * 2 - 1)).toFixed(1) : 0;
+             const btnColor = isOn ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600';
+             
+             cont.innerHTML += `
+                 <div class="bg-white rounded-xl shadow border ${hasOT?'border-red-300':'border-gray-200'} p-4 relative transition-all ${!isOn?'opacity-75':''}">
+                     <div class="flex justify-between items-start mb-3"><div><h4 class="font-bold text-gray-800 text-lg">${eq.nombre}</h4><p class="text-[10px] text-gray-500 font-bold">${eq.area}${lockAlert}</p></div>${isOn ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[10px] font-bold animate-pulse">EN MARCHA</span>' : (hasOT ? '<span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-[10px] font-bold border border-red-200"><i data-lucide="lock" class="w-3 h-3 inline"></i> BLOQUEADO</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-[10px] font-bold">DETENIDO</span>')}</div>
+                     <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                           <div class="bg-slate-50 p-2 rounded"><p class="text-[9px] uppercase text-gray-400 font-bold">Temp</p><p class="font-bold ${temp > (eq.scada.baseTemp*1.2) ? 'text-red-600' : 'text-slate-700'}">${temp}°C</p></div>
+                           <div class="bg-slate-50 p-2 rounded"><p class="text-[9px] uppercase text-gray-400 font-bold">RPM</p><p class="font-bold text-slate-700">${rpm}</p></div>
+                           <div class="bg-slate-50 p-2 rounded"><p class="text-[9px] uppercase text-gray-400 font-bold">Presión</p><p class="font-bold text-slate-700">${presion}</p></div>
+                     </div>
+                     <button onclick="toggleScada('${eq.id}')" class="w-full text-white text-xs font-bold py-2 rounded shadow transition ${btnColor}">${isOn?'Apagar':'Encender'}</button>
+                 </div>`;
+            });
+            lucide.createIcons({ root: document.getElementById('scada-container') });
+        }
+ 
+        function toggleScada(id) {
+            const hasOT = db.ots.some(o => o.equipoId === id && ['proceso', 'sanidad', 'calidad', 'revision'].includes(o.estado));
+            const eq = db.equipos.find(x => x.id === id);
+            
+         if(!hasOT) {
+             eq.scada.status = eq.scada.status === 'running' ? 'stopped' : 'running';
+             saveDB(); 
+            } else {
+             if(eq.scada.status === 'running') {
+                 eq.scada.status = 'stopped'; saveDB(); // Siempre permite apagar
+                } else {
+                 mostrarAlerta(`No se puede encender el equipo ${eq.nombre}. Se encuentra bloqueado por seguridad debido a que tiene una Orden de Trabajo activa en mantenimiento.`);
+                }
+            }
+        }
+    
+    // Optimización SCADA setInterval solo actualiza si estás viéndolo
+    setInterval(() => { if(document.getElementById('tab-scada').classList.contains('active')) renderSCADA(); }, 3000);
+ 
+        // --- ÁRBOL DE EQUIPOS ---
+        function renderEquiposTree() {
+            const cont = document.getElementById('tree-container');
+         cont.innerHTML = '';
+           const areas = ['Panes y Dulces', 'Latas', 'Carnes', 'Congelados'];
+         
+         areas.forEach(area => {
+             const eqs = db.equipos.filter(e => e.area === area);
+             let itemsHtml = eqs.map(eq => {
+                 const iconHtml = eq.img ? `<img src="${eq.img}" class="w-6 h-6 object-cover rounded shadow-sm">` : `<i data-lucide="cog" class="w-4 h-4 text-gray-400"></i>`;
+                 return `
+                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-200 ml-6 mb-2 hover:border-blue-300">
+                     <div class="flex items-center gap-2">${iconHtml}<span class="font-bold text-gray-700">${eq.nombre}</span> <span class="text-[9px] bg-blue-100 text-blue-800 px-1 rounded">${eq.id}</span></div>
+                     <div class="flex gap-2"><button onclick="editarElemento('equipo', '${eq.id}')" class="text-blue-500 hover:bg-blue-100 p-1.5 rounded"><i data-lucide="edit" class="w-4 h-4"></i></button><button onclick="eliminarElemento('equipo', '${eq.id}')" class="text-red-500 hover:bg-red-100 p-1.5 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+              </div>`}).join('');
+               
+             cont.innerHTML += `
+                 <details open class="mb-4">
+                     <summary class="font-bold text-md text-slate-700 flex items-center gap-2 mb-2 hover:text-blue-600 select-none bg-slate-100 p-2 rounded"><i data-lucide="folder-open" class="w-5 h-5 text-blue-500"></i> Área: ${area} (${eqs.length})</summary>
+                     ${itemsHtml || '<p class="text-xs text-gray-400 ml-6 italic mb-2">Sin equipos.</p>'}
+                </details>`;
+            });
+            lucide.createIcons({ root: document.getElementById('tree-container') });
+        }
+ 
+        // --- KANBAN Y CREADORES DE OTs ---
+        function renderKanban() {
+            ['pendientes', 'proceso', 'sanidad', 'calidad', 'revision', 'finalizadas'].forEach(st => document.getElementById(`kb-${st}`).innerHTML = '');
+            const hoyStr = new Date().toISOString().split('T')[0];
+ 
+         db.ots.forEach(ot => {
+             const eq = db.equipos.find(e => e.id === ot.equipoId)?.nombre || 'Equipo X';
+             const tech = db.personal.find(p => p.id === ot.tecnicoId)?.nombre || 'Sin asignar';
+             const badge = ot.tipo === 'Correctivo' ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700';
+               
+                let atrasadoHTML = '';
+                if(ot.estado !== 'finalizadas' && ot.fecha < hoyStr) {
+                    atrasadoHTML = `<div class="absolute -top-2 -right-2 bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow animate-pulse">¡ATRASADA!</div>`;
+               }
+ 
+             let btns = '';
+             if(ot.estado === 'pendientes') {
+                 btns = `<button onclick="moverOT('${ot.id}', 'proceso')" class="w-full mt-3 bg-blue-500 text-white text-[10px] py-1.5 rounded font-bold hover:bg-blue-600 transition mb-1">Mover a En Proceso</button>`;
+                 if(ot.fecha > hoyStr) {
+                     btns += `<button onclick="abrirAdelantarOT('${ot.id}')" class="w-full bg-orange-100 text-orange-700 border border-orange-200 text-[10px] py-1 rounded font-bold hover:bg-orange-200 transition">Adelantar Programación</button>`;
+                 }
+             }
+             else if(ot.estado === 'proceso') btns = `<button onclick="abrirEjecucionOT('${ot.id}')" class="w-full mt-3 bg-blue-600 text-white text-[10px] py-1.5 rounded font-bold shadow-sm flex justify-center items-center gap-1 hover:bg-blue-700 transition"><i data-lucide="wrench" class="w-3 h-3"></i> Tareas (Mant.)</button>`;
+             else if(ot.estado === 'sanidad') btns = `<button onclick="abrirChecklistUniversal('${ot.id}', 'sanidad')" class="w-full mt-3 bg-teal-500 text-white text-[10px] py-1.5 rounded font-bold shadow-sm flex justify-center items-center gap-1 hover:bg-teal-600 transition"><i data-lucide="spray-can" class="w-3 h-3"></i> Revisión Sanidad</button>`;
+             else if(ot.estado === 'calidad') btns = `<button onclick="abrirChecklistUniversal('${ot.id}', 'calidad')" class="w-full mt-3 bg-indigo-500 text-white text-[10px] py-1.5 rounded font-bold shadow-sm flex justify-center items-center gap-1 hover:bg-indigo-600 transition"><i data-lucide="microscope" class="w-3 h-3"></i> Revisión Calidad</button>`;
+             else if(ot.estado === 'revision') btns = `<button onclick="abrirAprobacionOT('${ot.id}')" class="w-full mt-3 bg-orange-500 text-white text-[10px] py-1.5 rounded font-bold shadow-sm hover:bg-orange-600 transition flex justify-center items-center gap-1"><i data-lucide="pen-tool" class="w-3 h-3"></i> Firmas de Cierre</button>`;
+ 
+             const card = `
+                 <div class="bg-white p-3 rounded shadow-sm border border-gray-200 relative group text-xs hover:border-blue-400 transition mt-2">
+                   ${atrasadoHTML}
+                  ${ot.estado!=='finalizadas' ? `<button onclick="prepararCancelacionOT('${ot.id}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 hidden group-hover:block z-10"><i data-lucide="x-circle" class="w-4 h-4"></i></button>`:''}
+                     <div class="flex justify-between mb-2"><span class="font-bold text-gray-400">${ot.id}</span><span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${badge}">${ot.tipo}</span></div>
+                     <p class="font-bold text-gray-800 leading-tight mb-2 pr-4">${ot.desc}</p>
+                     <p class="text-[10px] text-gray-500 mb-2 truncate bg-gray-50 p-1 rounded border border-gray-100">${eq}</p>
+                     <p class="text-[10px] text-gray-600 font-bold border-t pt-2 mt-1 flex items-center gap-1 justify-between">
+                         <span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ${tech}</span>
+                         <span class="text-blue-500">${ot.fecha}</span>
+                     </p>
+                     ${btns}
+                 </div>`;
+           document.getElementById(`kb-${ot.estado}`).innerHTML += card;
+            });
+         lucide.createIcons();
+        }
+ 
+        function moverOT(id, state) { 
+        if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede mover OTs a En Proceso."); return; }
+           const ot = db.ots.find(o => o.id === id); 
+           if(ot) { 
+               ot.estado = state; 
+               if(state === 'proceso') detenerEquipoPorOT(ot.equipoId); // Bloquea en SCADA ahora
+               saveDB(); 
+            } 
+        }
+ 
+        function detenerEquipoPorOT(equipoId) {
+           const eq = db.equipos.find(e => e.id === equipoId);
+          if(eq) eq.scada.status = 'stopped';
+        }
+ 
+        // ADELANTAR OT
+        function abrirAdelantarOT(id) {
+        if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento o Supervisores pueden adelantar mantenimientos."); return; }
+           
+        document.getElementById('adelantar-ot-id').value = id;
+        document.getElementById('adelanto-fecha').value = new Date().toISOString().split('T')[0];
+           
+           const isAdminSup = currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor');
+           const selectQuien = document.getElementById('adelanto-quien-select');
+           const inputQuien = document.getElementById('adelanto-quien-input');
+           
+           if(isAdminSup) {
+            selectQuien.classList.remove('hidden');
+            inputQuien.classList.add('hidden');
+              selectQuien.required = true;
+               inputQuien.required = false;
+             selectQuien.innerHTML = '<option value="">Seleccione encargado...</option>' + 
+                db.personal.filter(p => p.rol.includes('Supervisor') || p.rol.includes('Administrador')).map(p => `<option value="${p.nombre}">${p.nombre} (${p.dpto})</option>`).join('');
+           } else {
+            selectQuien.classList.add('hidden');
+            inputQuien.classList.remove('hidden');
+              selectQuien.required = false;
+               inputQuien.required = true;
+               inputQuien.value = currentUser.nombre;
+               inputQuien.disabled = true;
+           }
+ 
+        abrirModal('modalAdelantar', 'formAdelantar', false);
+        }
+ 
+        function ejecutarAdelanto(e) {
+            e.preventDefault();
+            const id = document.getElementById('adelantar-ot-id').value;
+            const nuevaF = document.getElementById('adelanto-fecha').value;
+            const isAdminSup = currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor');
+            const quien = isAdminSup ? document.getElementById('adelanto-quien-select').value : currentUser.nombre;
+            const motivo = document.getElementById('adelanto-motivo').value;
+ 
+            if(!quien) { mostrarAlerta("Debe indicar quién solicita el adelanto."); return; }
+ 
+            const ot = db.ots.find(o => o.id === id);
+            if(ot) {
+                ot.fecha = nuevaF;
+              db.notas_comms.push({ id: 'N'+Date.now(), fecha: new Date().toISOString().split('T')[0], autor: currentUser.nombre, dpto: currentUser.dpto, texto: `La OT ${id} fue adelantada para el ${nuevaF}. Solicitado por: ${quien}. Motivo: ${motivo}` });
+                saveDB();
+              cerrarModal('modalAdelantar');
+            }
+        }
+ 
+        function abrirModalOT() {
+        if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede crear OTs."); return; }
+           abrirModal('modalOT', 'formOT');
+        }
+ 
+        function abrirModalParada() {
+        if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede crear OTs."); return; }
+         abrirModal('modalParada', 'formParada');
+        }
+ 
+        function guardarOT(e) {
+          e.preventDefault();
+           const equipoId = document.getElementById('ot-equipo').value; const planId = document.getElementById('ot-plan').value; const tecnicoId = document.getElementById('ot-tecnico').value; const fecha = document.getElementById('ot-fecha').value; const tiempo = parseFloat(document.getElementById('ot-tiempo').value);
+            if(!equipoId || !planId || !tecnicoId || !fecha || !tiempo) { mostrarAlerta("Complete todos los campos."); return; }
+            const desc = document.getElementById('ot-plan').options[document.getElementById('ot-plan').selectedIndex].text;
+            db.ots.push({ id: 'OT-' + Date.now().toString().slice(-4), tipo: 'Preventivo', equipoId: equipoId, planId: planId, desc: desc, tecnicoId: tecnicoId, fecha: fecha, estado: 'pendientes', tiempo: tiempo, repuestos: [], costoTotal: 0 });
+            saveDB(); cerrarModal('modalOT');
+        }
+ 
+        function guardarParada(e) {
+            e.preventDefault();
+            const equipoId = document.getElementById('par-equipo').value; const tecnicoId = document.getElementById('par-tecnico').value; const desc = document.getElementById('par-desc').value; const tiempo = parseFloat(document.getElementById('par-tiempo').value);
+            const motivo = document.getElementById('par-motivo').value;
+            if(!equipoId || !tecnicoId || !desc || !tiempo) { mostrarAlerta("Complete todos los campos."); return; }
+            db.ots.push({ id: 'OT-' + Date.now().toString().slice(-4), tipo: 'Correctivo', equipoId: equipoId, planId: null, desc: `Falla: ${motivo} - ${desc}`, tecnicoId: tecnicoId, fecha: new Date().toISOString().split('T')[0], estado: 'pendientes', tiempo: tiempo, repuestos: [], costoTotal: 0 });
+            saveDB();
+          cerrarModal('modalParada');
+        }
+ 
+        function prepararCancelacionOT(id) { 
+        if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede cancelar OTs."); return; }
+        abrirModal('modalCancelOT', 'formCancelOT'); document.getElementById('cancel-ot-id').value = id; 
+        }
+        function ejecutarCancelacionOT(e) {
+            e.preventDefault(); const id = document.getElementById('cancel-ot-id').value; const mot = document.getElementById('cancel-ot-motivo').value; const ot = db.ots.find(x => x.id === id);
+         if(!ot) return;
+         db.ots_canceladas.push({ id: ot.id, otDesc: ot.desc, motivo: mot });
+          db.ots = db.ots.filter(x => x.id !== id);
+            saveDB(); cerrarModal('modalCancelOT');
+        }
+ 
+        // --- CHECKLISTS UNIVERSALES (SANIDAD / CALIDAD) ---
+        const checklistsUniversales = {
+            'sanidad': {
+                titulo: 'Revisión de Sanidad', color: 'teal',
+                tareas: ['1. Área de trabajo limpia y despejada de fluidos/residuos.', '2. Desinfección de superficies de contacto completada.', '3. Retiro total de herramientas y basura.', '4. Validación de inocuidad en el equipo.']
+            },
+            'calidad': {
+                titulo: 'Revisión de Calidad', color: 'indigo',
+                tareas: ['1. Parámetros de operación en norma.', '2. Verificación de sensores y alarmas críticas.', '3. Prueba de producto inicial (Tolerancia aceptada).', '4. Aprobación final para arranque seguro en producción.']
+            }
+        };
+ 
+        function abrirChecklistUniversal(otId, dept) {
+            const requiredDept = dept.charAt(0).toUpperCase() + dept.slice(1);
+         if(!checkPermission(requiredDept)) { mostrarAlerta(`Solo personal de ${requiredDept} puede realizar esta revisión.`); return; }
+ 
+            const data = checklistsUniversales[dept];
+       document.getElementById('univ-ot-id').value = otId;
+          document.getElementById('univ-tipo-dept').value = dept;
+           
+          document.getElementById('univ-header').className = `p-4 border-b flex justify-between items-center rounded-t-xl bg-${data.color}-600`;
+          document.getElementById('univ-titulo').innerText = data.titulo;
+ 
+          // Lógica Encargado (Admin escoge, Usuario Normal es automático)
+          const isAdminSup = currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor');
+          const selEncargado = document.getElementById('univ-encargado');
+          const inEncargado = document.getElementById('univ-encargado-input');
+           
+          if(isAdminSup) {
+              const personalDepto = db.personal.filter(p => p.dpto === requiredDept);
+             selEncargado.innerHTML = '<option value="">Seleccione al encargado de la revisión...</option>' + personalDepto.map(p => `<option value="${p.id}">${p.nombre} (${p.rol})</option>`).join('');
+             selEncargado.classList.remove('hidden'); selEncargado.required = true;
+             inEncargado.classList.add('hidden'); inEncargado.required = false;
+          } else {
+             selEncargado.classList.add('hidden'); selEncargado.required = false;
+             inEncargado.classList.remove('hidden'); inEncargado.required = true;
+                inEncargado.value = currentUser.nombre;
+          }
+           
+          const cont = document.getElementById('univ-tareas');
+         cont.innerHTML = data.tareas.map((t, i) => `
+             <div class="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded shadow-sm">
+                 <input type="checkbox" id="univ_chk_${i}" required class="w-5 h-5 text-${data.color}-600 rounded cursor-pointer">
+                 <label for="univ_chk_${i}" class="text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none">${t}</label>
+             </div>
+         `).join('');
+ 
+          // Sección de Insumos (solo sanidad)
+          const insumosSec = document.getElementById('univ-insumos-section');
+          if(dept === 'sanidad') {
+             insumosSec.classList.remove('hidden');
+                insumosSanidadTemp = [];
+                const repSel = document.getElementById('univ-insumo-sel');
+                repSel.innerHTML = '<option value="">No hay insumos (Opcional)</option>' + db.inventario.filter(r => r.tipo.includes('Sanidad') || r.tipo.includes('Consumible')).map(r => `<option value="${r.id}">${r.nombre} (Disponibles: ${r.stock})</option>`).join('');
+             actualizarListaInsumosSanidad();
+          } else {
+             insumosSec.classList.add('hidden');
+          }
+ 
+       abrirModal('modalChecklistUniversal', 'formUniv', false);
+        }
+ 
+        let insumosSanidadTemp = [];
+        function addInsumoSanidad() {
+            const id = document.getElementById('univ-insumo-sel').value;
+            const cant = parseInt(document.getElementById('univ-insumo-cant').value);
+            if(!id || cant < 1) return;
+            const r = db.inventario.find(x => x.id === id);
+            if(r.stock < cant) { mostrarAlerta(`No hay suficiente stock. (Disponible: ${r.stock})`); return; }
+ 
+            const existe = insumosSanidadTemp.find(x => x.id === id);
+            if(existe) { existe.cant += cant; }
+            else { insumosSanidadTemp.push({ id: id, nombre: r.nombre, cant: cant, costoUnitario: r.costo }); }
+         actualizarListaInsumosSanidad();
+        }
+        function quitarInsumoSanidad(id) {
+            insumosSanidadTemp = insumosSanidadTemp.filter(x => x.id !== id);
+         actualizarListaInsumosSanidad();
+        }
+        function actualizarListaInsumosSanidad() {
+            const tbody = document.getElementById('univ-insumos-list');
+            tbody.innerHTML = insumosSanidadTemp.map(r => `<tr><td class="p-2 truncate font-bold text-gray-700">${r.nombre}</td><td class="p-2 text-center text-teal-600 font-bold">${r.cant}</td><td class="p-2 text-right">$${r.costoUnitario.toFixed(2)}</td><td class="p-2 text-center"><button type="button" onclick="quitarInsumoSanidad('${r.id}')" class="text-red-500 hover:text-red-700 font-bold"><i data-lucide="minus-circle" class="w-4 h-4 mx-auto"></i></button></td></tr>`).join('');
+         if(insumosSanidadTemp.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin insumos registrados</td></tr>';
+            lucide.createIcons();
+        }
+ 
+        function procesarChecklistUniversal(e) {
+         e.preventDefault();
+          const otId = document.getElementById('univ-ot-id').value;
+          const dept = document.getElementById('univ-tipo-dept').value;
+          const isAdminSup = currentUser.rol.includes('Administrador') || currentUser.rol.includes('Supervisor');
+          const encargadoId = isAdminSup ? document.getElementById('univ-encargado').value : currentUser.personalId;
+           
+          const ot = db.ots.find(o => o.id === otId);
+          if(!ot) return;
+          if(!encargadoId) { mostrarAlerta("Debe asegurar un encargado para la revisión."); return; }
+            
+            // Si es sanidad, descontar insumos
+            if(dept === 'sanidad') { 
+               ot.encargadoSanidad = encargadoId; 
+                ot.estado = 'calidad'; 
+                // Añadir insumos al costo
+                if(!ot.repuestos) ot.repuestos = [];
+                for(let u of insumosSanidadTemp) {
+                    const r = db.inventario.find(x => x.id === u.id);
+                    if(r) r.stock -= u.cant;
+                    // Check if already in array
+                    const exists = ot.repuestos.find(x => x.id === u.id);
+                    if(exists) exists.cant += u.cant;
+                    else ot.repuestos.push(u);
+                }
+            }
+         if(dept === 'calidad') { ot.encargadoCalidad = encargadoId; ot.estado = 'revision'; }
+            
+          saveDB(); cerrarModal('modalChecklistUniversal');
+        }
+ 
+        // --- FIRMAS Y FLUJO EN REVISIÓN (3 SUPERVISORES) & PROGRAMACION AUTO ---
+        let otAprobacion = null;
+        let canvasFirmas = {
+          mant: { el: null, ctx: null, isDrawing: false },
+         sanidad: { el: null, ctx: null, isDrawing: false },
+         calidad: { el: null, ctx: null, isDrawing: false }
+        };
+ 
+        function abrirAprobacionOT(otId) {
+        if(!checkPermission('Mantenimiento') && !checkPermission('Administración')) { mostrarAlerta("Solo Supervisores o Administradores pueden aprobar el cierre de OTs."); return; }
+         otAprobacion = db.ots.find(o => o.id === otId);
+       abrirModal('modalAprobarOT', 'formAprobarOT', false);
+       document.getElementById('formAprobarOT').reset();
+       document.getElementById('aprobar-ot-id').value = otId;
+            
+       setTimeout(initTodasLasFirmas, 300);
+        }
+ 
+        function initTodasLasFirmas() {
+         ['mant', 'sanidad', 'calidad'].forEach(key => {
+             const canvas = document.getElementById(`canvasFirma-${key}`);
+             if(!canvas) return;
+             const rect = canvas.parentElement.getBoundingClientRect();
+             canvas.width = rect.width; canvas.height = rect.height;
+             const ctx = canvas.getContext('2d');
+             ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#0f172a';
+             canvasFirmas[key].el = canvas; canvasFirmas[key].ctx = ctx;
+ 
+             const start = e => { canvasFirmas[key].isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX||(e.touches[0].clientX-rect.left), e.offsetY||(e.touches[0].clientY-rect.top)); e.preventDefault(); };
+             const draw = e => { if(!canvasFirmas[key].isDrawing)return; ctx.lineTo(e.offsetX||(e.touches[0].clientX-rect.left), e.offsetY||(e.touches[0].clientY-rect.top)); ctx.stroke(); e.preventDefault(); };
+             const stop = () => canvasFirmas[key].isDrawing = false;
+ 
+             canvas.onmousedown = start; canvas.onmousemove = draw; canvas.onmouseup = stop; canvas.onmouseout = stop;
+             canvas.ontouchstart = start; canvas.ontouchmove = draw; canvas.ontouchend = stop;
+            });
+        }
+ 
+        function limpiarFirmaMultiple(key) {
+          const c = canvasFirmas[key];
+            if(c && c.ctx) c.ctx.clearRect(0,0,c.el.width,c.el.height);
+        }
+ 
+        function verificarCanvasVacio(canvas) {
+          const blank = document.createElement('canvas');
+         blank.width = canvas.width; blank.height = canvas.height;
+          return canvas.toDataURL() === blank.toDataURL();
+        }
+ 
+        // AQUÍ SE CALCULA LA PRÓXIMA OT AUTOMÁTICA
+        function calcularSiguienteOT(otOriginal) {
+            if(otOriginal.tipo !=='Preventivo' || !otOriginal.planId) return;
+            const plan = db.planes_v2.find(p => p.id === otOriginal.planId);
+            if(!plan || !plan.frec) return;
+ 
+            const frecStr = plan.frec.toLowerCase();
+            let diasSumar = 0;
+         if(frecStr.includes('diario')) diasSumar = 1;
+            else if(frecStr.includes('semanal')) diasSumar = 7;
+            else if(frecStr.includes('quincenal')) diasSumar = 15;
+            else if(frecStr.includes('mensual')) diasSumar = 30;
+            else if(frecStr.includes('trimestral')) diasSumar = 90;
+            else if(frecStr.includes('semestral')) diasSumar = 180;
+            else if(frecStr.includes('anual')) diasSumar = 365;
+ 
+            if(diasSumar > 0) {
+                let d = new Date(); // Toma la fecha de finalización (hoy)
+             d.setDate(d.getDate() + diasSumar);
+                const proximaFecha = d.toISOString().split('T')[0];
+ 
+                db.ots.push({
+                    id: 'OT-' + Date.now().toString().slice(-4),
+                    tipo: 'Preventivo',
+                    equipoId: otOriginal.equipoId,
+                    planId: otOriginal.planId,
+                    desc: plan.frec,
+                    tecnicoId: otOriginal.tecnicoId, // Mantiene el técnico anterior
+                    fecha: proximaFecha,
+                    estado: 'pendientes',
+                    tiempo: otOriginal.tiempo,
+                    repuestos: [],
+                    costoTotal: 0
+                });
+            }
+        }
+ 
+        function procesarAprobacionOT(e) {
+            e.preventDefault();
+     if(verificarCanvasVacio(canvasFirmas.mant.el) || verificarCanvasVacio(canvasFirmas.sanidad.el) || verificarCanvasVacio(canvasFirmas.calidad.el)) {
+            mostrarAlerta("Se requieren las 3 firmas obligatorias de los supervisores para cerrar la OT.");
+                return;
+            }
+            otAprobacion.estado = 'finalizadas'; 
+       otAprobacion.observacionesMant = document.getElementById('aprobar-ot-mant').value;
+       otAprobacion.observacionesSanidad = document.getElementById('aprobar-ot-sanidad').value;
+       otAprobacion.observacionesCalidad = document.getElementById('aprobar-ot-calidad').value;
+         
+         // Calcular Costo Final en Base a M.O. + Repuestos + Fijo
+         let costoMO = 0;
+         const tech = db.personal.find(p => p.id === otAprobacion.tecnicoId);
+         if(tech && otAprobacion.tiempo) costoMO = tech.valor * otAprobacion.tiempo;
+         
+         let costoRep = 0;
+        if(otAprobacion.repuestos) {
+             costoRep = otAprobacion.repuestos.reduce((acc, r) => acc + (r.cant * r.costoUnitario), 0);
+         }
+         
+         let costoPrev = 0;
+         if(otAprobacion.tipo === 'Preventivo' && otAprobacion.planId) {
+             const plan = db.planes_v2.find(p => p.id === otAprobacion.planId);
+             if(plan && plan.costoPreventivo) costoPrev = plan.costoPreventivo;
+         }
+ 
+         otAprobacion.costoTotal = costoMO + costoRep + costoPrev;
+ 
+      calcularSiguienteOT(otAprobacion);
+ 
+            saveDB(); cerrarModal('modalAprobarOT');
+        }
+ 
+        // --- FLUJO DE EJECUCION CHECKLIST TECNICO ---
+        let otEnEjecucion = null;
+        let repuestosAñadidos = [];
+ 
+        function abrirEjecucionOT(otId) {
+        if(!checkPermission('Mantenimiento')) { mostrarAlerta("Solo personal de Mantenimiento puede ejecutar esta OT."); return; }
+ 
+            otEnEjecucion = db.ots.find(o => o.id === otId);
+       document.getElementById('ejec-ot-id').value = otId;
+       document.getElementById('ejec-titulo').innerText = otEnEjecucion.tipo === 'Preventivo' ? 'Ejecución de Mantenimiento Preventivo' : 'Reparación de Falla (Correctiva)';
+       document.getElementById('ejec-subtitulo').innerText = `${otEnEjecucion.id} - ${db.equipos.find(e=>e.id===otEnEjecucion.equipoId)?.nombre}`;
+       document.getElementById('ejec-obs').value = otEnEjecucion.obs || '';
+            const cont = document.getElementById('ejec-checklist-container'); cont.innerHTML = '';
+            
+            if (otEnEjecucion.tipo === 'Preventivo' && otEnEjecucion.planId) {
+                const plan = db.planes_v2.find(p => p.id === otEnEjecucion.planId);
+           plan.grupos.forEach((g, gIdx) => {
+                 let tareasHtml = g.tareas.map((t, tIdx) => {
+                     const isNum = t.includes('[Número]'); const descLimpio = t.replace('[Número]', '').trim(); const idInput = `chk_${gIdx}_${tIdx}`;
+                     return `<div class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded shadow-sm hover:border-blue-300">${isNum ? `<input type="number" id="${idInput}" required class="w-24 border p-1 rounded text-center font-bold text-blue-600 bg-blue-50" placeholder="Valor">` : `<input type="checkbox" id="${idInput}" required class="w-5 h-5 text-blue-600 rounded cursor-pointer">`}<label for="${idInput}" class="text-sm font-medium text-gray-700 cursor-pointer flex-1 select-none">${descLimpio}</label></div>`;
+                 }).join('');
+                 cont.innerHTML += `<div class="bg-gray-50 p-4 rounded-xl border border-gray-200"><h4 class="font-black text-slate-800 mb-3 border-b border-gray-300 pb-1">${g.nombre}</h4><div class="space-y-2">${tareasHtml}</div></div>`;
+             });
+            } else {
+             cont.innerHTML = `<div class="bg-red-50 p-4 rounded-xl border border-red-200"><h4 class="font-black text-red-800 mb-3 border-b border-red-300 pb-1">Reporte de Tareas Realizadas (Mantenimiento)</h4><div class="space-y-3"><div><label class="font-bold text-sm">Causa raíz de la falla:</label><textarea required class="w-full border p-2 rounded" rows="2"></textarea></div><div><label class="font-bold text-sm">Reparación efectuada / Repuestos usados:</label><textarea required class="w-full border p-2 rounded" rows="2"></textarea></div><div class="flex items-center gap-2"><input type="checkbox" id="chk_corr" required class="w-5 h-5"><label for="chk_corr" class="font-bold cursor-pointer select-none">Equipo mecánicamente/eléctricamente reparado</label></div></div></div>`;
+            }
+ 
+            // Preparar UI de Repuestos
+            repuestosAñadidos = [];
+            const repSel = document.getElementById('ejec-repuesto-sel');
+            repSel.innerHTML = '<option value="">No hay repuestos (Opcional)</option>' + db.inventario.filter(r => r.equipoId === otEnEjecucion.equipoId || !r.equipoId).map(r => `<option value="${r.id}">${r.nombre} (Disponibles: ${r.stock})</option>`).join('');
+         actualizarListaRepuestosEjec();
+ 
+       document.getElementById('modalEjecucionOT').classList.remove('hidden'); setTimeout(initCanvasFirma, 300);
+        }
+ 
+        function addRepuestoToEjec() {
+            const id = document.getElementById('ejec-repuesto-sel').value;
+            const cant = parseInt(document.getElementById('ejec-repuesto-cant').value);
+            if(!id || cant < 1) return;
+            const r = db.inventario.find(x => x.id === id);
+            if(r.stock < cant) { mostrarAlerta(`No hay suficiente stock. (Disponible: ${r.stock})`); return; }
+ 
+            const existe = repuestosAñadidos.find(x => x.id === id);
+            if(existe) { existe.cant += cant; }
+            else { repuestosAñadidos.push({ id: id, nombre: r.nombre, cant: cant, costoUnitario: r.costo }); }
+         actualizarListaRepuestosEjec();
+        }
+ 
+        function quitarRepuestoEjec(id) {
+            repuestosAñadidos = repuestosAñadidos.filter(x => x.id !== id);
+         actualizarListaRepuestosEjec();
+        }
+ 
+        function actualizarListaRepuestosEjec() {
+            const tbody = document.getElementById('ejec-repuestos-list');
+            tbody.innerHTML = repuestosAñadidos.map(r => `<tr><td class="p-2 truncate font-bold text-gray-700">${r.nombre}</td><td class="p-2 text-center text-blue-600 font-bold">${r.cant}</td><td class="p-2 text-right">$${r.costoUnitario.toFixed(2)}</td><td class="p-2 text-center"><button type="button" onclick="quitarRepuestoEjec('${r.id}')" class="text-red-500 hover:text-red-700 font-bold"><i data-lucide="minus-circle" class="w-4 h-4 mx-auto"></i></button></td></tr>`).join('');
+         if(repuestosAñadidos.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-400">Sin artículos registrados</td></tr>';
+            lucide.createIcons();
+        }
+ 
+        function procesarEjecucionOT() {
+          const form = document.getElementById('formEjecucion');
+         if(!form.checkValidity()) { form.reportValidity(); return; }
+        if(verificarCanvasVacio(canvasF)) { mostrarAlerta("Debe realizar su firma en el recuadro asignado."); return; }
+            
+            // Restar inventario
+            for(let u of repuestosAñadidos) {
+                const r = db.inventario.find(x => x.id === u.id);
+                if(r) r.stock -= u.cant;
+            }
+            
+          otEnEjecucion.repuestos = repuestosAñadidos;
+            otEnEjecucion.estado = 'sanidad'; // Ahora va a sanidad
+            otEnEjecucion.obs = document.getElementById('ejec-obs').value;
+            saveDB(); cerrarModal('modalEjecucionOT');
+        }
+ 
+        let canvasF, ctxF, isDrawing = false;
+        function initCanvasFirma() {
+         canvasF = document.getElementById('canvasFirmaTecnico'); if(!canvasF) return;
+           const rect = canvasF.parentElement.getBoundingClientRect(); canvasF.width = rect.width; canvasF.height = rect.height;
+            ctxF = canvasF.getContext('2d'); ctxF.lineWidth = 2; ctxF.lineCap = 'round'; ctxF.strokeStyle = '#0f172a';
+          const start = e => { isDrawing = true; ctxF.beginPath(); ctxF.moveTo(e.offsetX||(e.touches[0].clientX-rect.left), e.offsetY||(e.touches[0].clientY-rect.top)); e.preventDefault(); };
+          const draw = e => { if(!isDrawing)return; ctxF.lineTo(e.offsetX||(e.touches[0].clientX-rect.left), e.offsetY||(e.touches[0].clientY-rect.top)); ctxF.stroke(); e.preventDefault(); };
+          const stop = () => isDrawing = false;
+         canvasF.onmousedown = start; canvasF.onmousemove = draw; canvasF.onmouseup = stop; canvasF.onmouseout = stop;
+         canvasF.ontouchstart = start; canvasF.ontouchmove = draw; canvasF.ontouchend = stop;
+        }
+        function limpiarFirma() { if(ctxF) ctxF.clearRect(0,0,canvasF.width,canvasF.height); }
+ 
+        // --- MODALES Y CRUD GLOBAL ---
+        function abrirModal(modalId, formId, reset = true) { 
+         if(reset && formId) { 
+         document.getElementById(formId).reset(); 
+         document.querySelectorAll(`#${formId} input[type="hidden"]`).forEach(i => i.value = ''); 
+         if(document.getElementById('per-preview-img')) { document.getElementById('per-preview-img').classList.add('hidden'); document.getElementById('per-preview-icon').classList.remove('hidden'); }
+         if(document.getElementById('eq-preview-img')) { document.getElementById('eq-preview-img').classList.add('hidden'); document.getElementById('eq-preview-icon').classList.remove('hidden'); }
+             
+             // Mostrar creación de credenciales solo si es Admin en Modal Personal
+             if(modalId === 'modalPersonal' && currentUser && currentUser.rol.includes('Administrador')) {
+             document.getElementById('auth-fields').classList.remove('hidden');
+             document.getElementById('per-user').required = false; // No es obligatorio, solo si quiere
+             document.getElementById('per-pass').required = false;
+             } else if(document.getElementById('auth-fields')) {
+             document.getElementById('auth-fields').classList.add('hidden');
+             }
+            } 
+       document.getElementById(modalId).classList.remove('hidden'); 
+       document.getElementById(modalId).classList.add('flex'); 
+        }
+        function cerrarModal(modalId) { document.getElementById(modalId).classList.add('hidden'); document.getElementById(modalId).classList.remove('flex'); }
+ 
+        function editarElemento(tipo, id) {
+           if(tipo === 'equipo') {
+         abrirModal('modalEquipo','formEquipo'); 
+               const x = db.equipos.find(i=>i.id===id); 
+         document.getElementById('eq-edit-id').value = x.id; 
+         document.getElementById('eq-id').value = x.id; 
+         document.getElementById('eq-nombre').value = x.nombre; 
+         document.getElementById('eq-area').value = x.area; 
+         document.getElementById('eq-img-b64').value = x.img || '';
+               if(x.img) {
+              document.getElementById('eq-preview-img').src = x.img;
+              document.getElementById('eq-preview-img').classList.remove('hidden');
+              document.getElementById('eq-preview-icon').classList.add('hidden');
+               }
+            }
+            if(tipo === 'inventario') { 
+         abrirModal('modalInventario','formRepuesto'); 
+               const x = db.inventario.find(i=>i.id===id); 
+         document.getElementById('rep-edit-id').value = x.id;
+         document.getElementById('rep-tipo').value = x.tipo || 'Repuesto';
+         document.getElementById('rep-codigo').value = x.id;
+            document.getElementById('rep-nombre').value = x.nombre;
+            document.getElementById('rep-equipo').value = x.equipoId || '';
+         document.getElementById('rep-stock').value = x.stock;
+         document.getElementById('rep-min').value = x.min;
+         document.getElementById('rep-costo').value = x.costo;
+         document.getElementById('rep-url').value = x.url||'';
+         document.getElementById('rep-img-b64').value = x.img || '';
+         document.getElementById('rep-desc').value = x.desc || '';
+            }
+         if(tipo === 'personal') {
+         abrirModal('modalPersonal','formPersonal'); 
+             const x = db.personal.find(i=>i.id===id); 
+         document.getElementById('per-edit-id').value = x.id;
+            document.getElementById('per-nombre').value = x.nombre;
+         document.getElementById('per-dpto').value = x.dpto || 'Mantenimiento';
+            document.getElementById('per-rol').value = x.rol;
+         document.getElementById('per-valor').value = x.valor; 
+         document.getElementById('per-img-b64').value = x.img || '';
+         document.getElementById('per-desc').value = x.desc || '';
+             if(x.img) { document.getElementById('per-preview-img').src = x.img; document.getElementById('per-preview-img').classList.remove('hidden'); document.getElementById('per-preview-icon').classList.add('hidden'); }
+             
+             // Si se edita y es Admin, mostrar auth options
+             if(currentUser && currentUser.rol.includes('Administrador')) {
+                 const authUser = db.usuariosAuth.find(u => u.personalId === id);
+                 if(authUser) {
+                 document.getElementById('per-user').value = authUser.user;
+                 document.getElementById('per-pass').value = authUser.pass;
+                 }
+             }
+            }
+        }
+ 
+        function guardarEquipo(e) { 
+            e.preventDefault(); 
+            const id = document.getElementById('eq-id').value; 
+           const editId = document.getElementById('eq-edit-id').value; 
+           const eqImg = document.getElementById('eq-img-b64').value;
+            
+          if(editId) { 
+              const i = db.equipos.findIndex(x=>x.id===editId); 
+              db.equipos[i].id = id.toUpperCase();
+              db.equipos[i].nombre = document.getElementById('eq-nombre').value;
+                db.equipos[i].area = document.getElementById('eq-area').value;
+                db.equipos[i].img = eqImg;
+            } else {
+                db.equipos.push({
+                  id: id.toUpperCase(), 
+                  nombre: document.getElementById('eq-nombre').value, 
+                    area: document.getElementById('eq-area').value, 
+                  img: eqImg,
+                  scada: {status:'stopped', baseTemp: 30, baseRpm: 100, basePresion: 10} 
+                });
+            }
+            saveDB(); 
+       cerrarModal('modalEquipo'); 
+        }
+ 
+        function guardarRepuesto(e) { 
+           e.preventDefault(); const editId = document.getElementById('rep-edit-id').value; 
+           const rep = { 
+             id: document.getElementById('rep-codigo').value.toUpperCase(), 
+                tipo: document.getElementById('rep-tipo').value,
+                nombre: document.getElementById('rep-nombre').value.toUpperCase(), 
+                equipoId: document.getElementById('rep-equipo').value, 
+             stock: parseInt(document.getElementById('rep-stock').value), 
+             min: parseInt(document.getElementById('rep-min').value), 
+             costo: parseFloat(document.getElementById('rep-costo').value), 
+             url: document.getElementById('rep-url').value,
+             img: document.getElementById('rep-img-b64').value,
+             desc: document.getElementById('rep-desc').value
+            }; 
+         if(editId) { const i = db.inventario.findIndex(x=>x.id===editId); db.inventario[i] = rep; } else db.inventario.push(rep); 
+            saveDB(); cerrarModal('modalInventario'); 
+        }
+ 
+        function guardarPersonal(e) { 
+            e.preventDefault(); const editId = document.getElementById('per-edit-id').value; 
+           const p = { 
+             id: editId || 'P0'+Date.now().toString().slice(-2), 
+                nombre: document.getElementById('per-nombre').value, 
+                dpto: document.getElementById('per-dpto').value,
+             rol: document.getElementById('per-rol').value, 
+             valor: parseFloat(document.getElementById('per-valor').value),
+             img: document.getElementById('per-img-b64').value,
+             desc: document.getElementById('per-desc').value
+            }; 
+         if(editId) { const i = db.personal.findIndex(x=>x.id===editId); db.personal[i] = p; } else db.personal.push(p); 
+         
+         // Gestionar credenciales Auth
+         const userField = document.getElementById('per-user');
+         const passField = document.getElementById('per-pass');
+         if(userField && passField && userField.value.trim() !== '') {
+             const authExists = db.usuariosAuth.findIndex(u => u.personalId === p.id);
+             const authData = { nombre: p.nombre, user: userField.value.trim(), pass: passField.value, rol: p.rol, dpto: p.dpto, personalId: p.id };
+             if(authExists >= 0) db.usuariosAuth[authExists] = authData;
+             else db.usuariosAuth.push(authData);
+         }
+ 
+         saveDB(); cerrarModal('modalPersonal'); 
+        }
+ 
+        function eliminarElemento(tipo, id) {
+         if(tipo === 'equipo') { const eq = db.equipos.find(x=>x.id===id); if(eq.scada.status !== 'stopped') { mostrarAlerta("Apague el equipo en SCADA primero."); return; } const otsEq = db.ots.some(o => o.equipoId === id); if(otsEq) { mostrarAlerta("Tiene OTs vinculadas."); return; } if(confirm('¿Borrar equipo permanentemente?')) { db.equipos = db.equipos.filter(x=>x.id!==id); saveDB(); } }
+            if(tipo === 'inventario') { if(confirm('¿Borrar artículo permanentemente?')) { db.inventario = db.inventario.filter(x=>x.id!==id); saveDB(); } }
+            if(tipo === 'personal') { if(confirm('¿Borrar colaborador permanentemente?')) { db.personal = db.personal.filter(x=>x.id!==id); saveDB(); } }
+            if(tipo === 'cotizacion') { if(confirm('¿Borrar registro de compra?')) { db.cotizaciones = db.cotizaciones.filter(x=>x.id!==id); saveDB(); } }
+            if(tipo === 'plan') { if(confirm('¿Borrar este plan de trabajo?')) { db.planes_v2 = db.planes_v2.filter(x=>x.id!==id); saveDB(); renderPlanesActivos(); } }
+        }
+ 
+        // --- CHECKLISTS Y BUILDER ---
+        function cargarPlanesSelectOT() { const eqId = document.getElementById('ot-equipo').value; const selectPlan = document.getElementById('ot-plan'); const planesEq = db.planes_v2.filter(p => p.equipoId === eqId); if(planesEq.length === 0) selectPlan.innerHTML = `<option value="">Sin planes registrados</option>`; else selectPlan.innerHTML = planesEq.map(p => `<option value="${p.id}">${p.frec}</option>`).join(''); }
+        function renderChecklistsHome() { const cont = document.getElementById('cl-equipos-grid'); cont.innerHTML = ''; db.equipos.forEach(eq => { const numPlanes = db.planes_v2.filter(p => p.equipoId === eq.id).length; cont.innerHTML += `<div onclick="verPlanesEquipo('${eq.id}', '${eq.nombre}')" class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:border-blue-500 hover:shadow-md transition text-center flex flex-col items-center justify-center h-32"><i data-lucide="folder-cog" class="w-8 h-8 text-blue-500 mb-2"></i><h4 class="font-bold text-slate-800 text-sm leading-tight">${eq.nombre}</h4><p class="text-[10px] text-gray-500 mt-1 font-bold">${numPlanes} Frecuencias Reg.</p></div>`; }); }
+        let eqActualPlan = null;
+        function verPlanesEquipo(eqId, eqNombre) { document.getElementById('checklists-home').classList.add('hidden'); document.getElementById('checklists-details').classList.remove('hidden'); document.getElementById('checklists-details').classList.add('flex'); document.getElementById('cl-eq-nombre').innerText = `Planes de: ${eqNombre}`; eqActualPlan = eqId; renderPlanesActivos(); }
+        function volverChecklists() { document.getElementById('checklists-home').classList.remove('hidden'); document.getElementById('checklists-details').classList.add('hidden'); document.getElementById('checklists-details').classList.remove('flex'); eqActualPlan = null; renderChecklistsHome(); }
+        function renderPlanesActivos() { const cont = document.getElementById('cl-planes-grid'); cont.innerHTML = ''; const planes = db.planes_v2.filter(p => p.equipoId === eqActualPlan); if(planes.length === 0) { cont.innerHTML = '<p class="text-sm text-gray-500">No hay planes. Utilice el botón amarillo para crear uno.</p>'; return; } planes.forEach((p, index) => { const gruposHtml = p.grupos.map(g => `<div class="mb-4 bg-gray-50 p-3 rounded border border-gray-100"><h5 class="text-[11px] font-black text-slate-600 uppercase mb-2 border-b border-gray-200 pb-1">${g.nombre}</h5><ul>${g.tareas.map(t => `<li class="flex items-start gap-2 text-xs text-gray-700 py-1"><i data-lucide="check-square" class="w-3 h-3 text-gray-400 mt-0.5 shrink-0"></i> <span>${t.replace('[Número]', '(Valor)')}</span></li>`).join('')}</ul></div>`).join(''); cont.innerHTML += `<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200"><div class="flex justify-between items-center border-b pb-3 mb-4"><h4 class="font-bold text-lg text-blue-800"><i data-lucide="calendar-clock" class="inline w-5 h-5 mr-1"></i> ${p.frec}</h4><div class="flex gap-2 items-center"><span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Valor: $${p.costoPreventivo ? p.costoPreventivo.toFixed(2) : '0.00'}</span><button onclick="eliminarElemento('plan', '${p.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1 rounded text-xs font-bold"><i data-lucide="trash" class="w-4 h-4"></i> Eliminar</button></div></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${gruposHtml}</div></div>`; }); lucide.createIcons(); }
+        let gruposBuilder = [];
+        function abrirBuilderPlan() { if(!eqActualPlan) return; gruposBuilder = []; document.getElementById('bld-equipo').value = eqActualPlan; document.getElementById('bld-frec').value = ''; document.getElementById('bld-costo').value = '0.00'; renderBuilder(); abrirModal('modalBuilderPlan',''); }
+        function renderBuilder() { const cont = document.getElementById('bld-grupos'); cont.innerHTML = ''; gruposBuilder.forEach((g, gIdx) => { const tareas = g.tareas.map((t, tIdx) => `<div class="flex gap-2 mb-2"><input type="text" value="${t}" onchange="bldUpdateTask(${gIdx}, ${tIdx}, this.value)" class="flex-1 border p-1 rounded text-xs" placeholder="Ej: Revisar motor (Opcional: agregue [Número] al final)"><button onclick="bldDelTask(${gIdx}, ${tIdx})" class="text-red-500"><i data-lucide="minus-circle" class="w-4 h-4"></i></button></div>`).join(''); cont.innerHTML += `<div class="bg-slate-50 p-4 rounded border border-slate-200 mb-4 relative"><button onclick="bldDelGrupo(${gIdx})" class="absolute top-2 right-2 text-red-500 hover:text-red-700"><i data-lucide="trash"></i></button><input type="text" value="${g.nombre}" onchange="bldUpdateGrupo(${gIdx}, this.value)" class="font-black text-sm uppercase bg-transparent border-b border-gray-300 focus:outline-none mb-3 w-3/4" placeholder="NOMBRE DEL GRUPO"><div>${tareas}</div><button onclick="bldAddTask(${gIdx})" class="text-blue-600 text-xs font-bold hover:underline">+ Agregar Tarea</button></div>`; }); lucide.createIcons(); }
+        function bldAgregarGrupo() { gruposBuilder.push({nombre: '', tareas: ['']}); renderBuilder(); } function bldUpdateGrupo(gIdx, val) { gruposBuilder[gIdx].nombre = val; } function bldAddTask(gIdx) { gruposBuilder[gIdx].tareas.push(''); renderBuilder(); } function bldUpdateTask(gIdx, tIdx, val) { gruposBuilder[gIdx].tareas[tIdx] = val; } function bldDelTask(gIdx, tIdx) { gruposBuilder[gIdx].tareas.splice(tIdx, 1); renderBuilder(); } function bldDelGrupo(gIdx) { gruposBuilder.splice(gIdx, 1); renderBuilder(); }
+        function guardarPlanBuilder() { const frec = document.getElementById('bld-frec').value; const costo = parseFloat(document.getElementById('bld-costo').value) || 0; if(!frec) { mostrarAlerta("Ponga el título/frecuencia."); return; } if(gruposBuilder.length === 0) { mostrarAlerta("Agregue al menos un grupo."); return; } const gruposLimpios = gruposBuilder.filter(g => g.nombre.trim() !== '').map(g => ({ nombre: g.nombre, tareas: g.tareas.filter(t => t.trim() !== '') })); db.planes_v2.push({ id: 'PLN-'+Date.now(), equipoId: eqActualPlan, frec: frec, costoPreventivo: costo, grupos: gruposLimpios }); saveDB(); cerrarModal('modalBuilderPlan'); renderPlanesActivos(); }
+ 
+        // --- COMPRAS ---
+        function cargarRepuestosCompra() { 
+            const eqF = document.getElementById('comp-equipo-filter').value; 
+            const selRep = document.getElementById('comp-repuesto'); 
+            selRep.innerHTML = '';
+            let reps;
+         if(!eqF) reps = db.inventario.filter(r => !r.equipoId);
+            else reps = db.inventario.filter(r => r.equipoId === eqF); 
+            
+         if(reps.length === 0) { selRep.innerHTML = '<option value="">Sin artículos registrados</option>'; document.getElementById('comp-url').value = ''; } 
+            else { selRep.innerHTML = reps.map(r => `<option value="${r.id}">${r.nombre} (Stock actual: ${r.stock}) - ${r.tipo}</option>`).join(''); document.getElementById('comp-url').value = reps[0].url || ''; }
+        }
+        function abrirCompraManualDesdeInv(repId, eqId) { abrirModal('modalCompra', 'formCompra'); document.getElementById('comp-equipo-filter').value = eqId || ''; cargarRepuestosCompra(); document.getElementById('comp-repuesto').value = repId; document.getElementById('comp-url').value = db.inventario.find(r=>r.id===repId)?.url || ''; }
+        function abrirModalCompraManual() { abrirModal('modalCompra', 'formCompra'); document.getElementById('comp-equipo-filter').value = ''; cargarRepuestosCompra(); }
+        function guardarCompra(e) { e.preventDefault(); const repId = document.getElementById('comp-repuesto').value; if(!repId) {mostrarAlerta("Seleccione un repuesto/insumo válido."); return;} const url = document.getElementById('comp-url').value; const repInv = db.inventario.find(r => r.id === repId); if(repInv && url) repInv.url = url; db.cotizaciones.push({ id: 'COM-'+Date.now().toString().slice(-4), repuestoId: repId, cant: parseInt(document.getElementById('comp-cant').value), url: url, estado: 'Enviada' }); saveDB(); cerrarModal('modalCompra'); switchTab('cotizaciones'); }
+        function renderCotizaciones() { const eqF = document.getElementById('filter-compra-eq').value; const tbody = document.getElementById('cotizaciones-tbody'); tbody.innerHTML = ''; db.cotizaciones.forEach(c => { const rep = db.inventario.find(r => r.id === c.repuestoId); if(!rep) return; if(eqF && rep.equipoId !== eqF) return; const eqNom = db.equipos.find(e=>e.id===rep.equipoId)?.nombre || 'Uso General / Insumo'; tbody.innerHTML += `<tr class="hover:bg-slate-50"><td class="p-3 font-bold text-gray-500 text-xs">${c.id}</td><td class="p-3 font-bold text-slate-700">${rep.nombre}<br><span class="text-[9px] text-gray-400 font-normal">${rep.tipo}</span></td><td class="p-3 text-xs text-gray-500">${eqNom}</td><td class="p-3 text-center font-bold">${c.cant}</td><td class="p-3">${c.url?`<a href="${c.url}" target="_blank" class="text-blue-600 hover:underline flex items-center gap-1 text-xs"><i data-lucide="external-link" class="w-3 h-3"></i> Enlace</a>`:'-'}</td><td class="p-3 text-center"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">${c.estado}</span></td><td class="p-3 text-center flex justify-center gap-2"><button onclick="recibirCompra('${c.id}')" title="Recibir en stock" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600"><i data-lucide="check-check" class="w-4 h-4"></i></button><button onclick="eliminarElemento('cotizacion', '${c.id}')" class="bg-red-50 text-red-500 p-1.5 hover:bg-red-100 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`; }); lucide.createIcons(); }
+        function recibirCompra(id) { const c = db.cotizaciones.find(x => x.id === id); const r = db.inventario.find(x => x.id === c.repuestoId); if(r) r.stock += parseInt(c.cant); db.cotizaciones = db.cotizaciones.filter(x => x.id !== id); saveDB(); }
+ 
+        // --- RRHH ---
+        function renderRRHH() { 
+           const cont = document.getElementById('rrhh-container'); if(!cont) return; 
+         cont.innerHTML = ''; 
+         db.personal.forEach(p => { 
+             const imgHtml = p.img ? `<img src="${p.img}" class="w-full h-full object-cover">` : `<span class="text-xl font-bold text-slate-400">${p.nombre.charAt(0)}</span>`;
+             let dptoColor = 'text-blue-600 bg-blue-50'; // default mant
+             if(p.dpto === 'Sanidad') dptoColor = 'text-teal-600 bg-teal-50';
+             if(p.dpto === 'Calidad') dptoColor = 'text-indigo-600 bg-indigo-50';
+             if(p.dpto === 'Administración') dptoColor = 'text-slate-600 bg-slate-100';
+               
+             cont.innerHTML += `
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 relative hover:shadow-md transition flex flex-col">
+                 <div class="absolute top-2 right-2 flex gap-1"><button onclick="editarElemento('personal', '${p.id}')" class="text-gray-400 hover:text-blue-500"><i data-lucide="edit" class="w-4 h-4"></i></button><button onclick="eliminarElemento('personal', '${p.id}')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+                 <div class="flex items-center gap-4 border-b border-gray-100 pb-3 mb-2">
+                     <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">${imgHtml}</div>
+                     <div>
+                           <h4 class="font-bold text-gray-800 leading-tight">${p.nombre}</h4>
+                           <p class="text-[9px] font-black uppercase tracking-wider inline-block px-1 rounded ${dptoColor} mb-0.5">${p.dpto}</p>
+                           <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">${p.rol}</p>
+                           <p class="text-xs text-gray-500 mt-0.5">Tarifa: <strong class="text-gray-800">$${p.valor.toFixed(2)}/h</strong></p>
+                     </div>
+                 </div>
+                 ${p.desc ? `<p class="text-xs text-gray-600 italic leading-tight">${p.desc}</p>` : '<p class="text-xs text-gray-400 italic">Sin descripción adicional.</p>'}
+                </div>`;
+            }); 
+            lucide.createIcons(); 
+        }
+        
+        // --- INVENTARIO ---
+        function mostrarImgDesc(id) {
+            const rep = db.inventario.find(r => r.id === id); if(!rep) return;
+          document.getElementById('ver-img-titulo').innerText = rep.nombre; document.getElementById('ver-img-id').innerText = "ID: " + rep.id;
+            const img = document.getElementById('ver-img-src'); const icon = document.getElementById('ver-img-icon');
+            if(rep.img) { img.src = rep.img; img.classList.remove('hidden'); icon.classList.add('hidden'); } else { img.classList.add('hidden'); icon.classList.remove('hidden'); }
+      document.getElementById('ver-img-desc').innerText = rep.desc || 'No hay descripción detallada para este artículo.';
+          abrirModal('modalVerImgDesc', null, false);
+        }
+ 
+        function renderInventario() { 
+           const term = (document.getElementById('search-inv')?.value || '').toLowerCase(); 
+           const filterEq = document.getElementById('filter-inv-eq')?.value; 
+           const tbody = document.getElementById('inventario-tbody'); tbody.innerHTML = ''; 
+            
+            let filtrados = db.inventario.filter(r => r.nombre.toLowerCase().includes(term) || r.id.toLowerCase().includes(term)); 
+         if(filterEq) filtrados = filtrados.filter(r => r.equipoId === filterEq); 
+            
+         filtrados.forEach(r => { 
+             const eq = db.equipos.find(e => e.id === r.equipoId)?.nombre || 'Uso General / Ninguno'; 
+             const rowClass = r.stock < r.min ? 'parpadeo-stock border-b border-yellow-300' : 'hover:bg-slate-50 transition-colors border-b';
+               
+             let iconStr = r.tipo.includes('Sanidad') ? '<i data-lucide="spray-can" class="w-3 h-3 inline text-teal-500 mr-1"></i>' : '';
+               
+             tbody.innerHTML += `
+             <tr class="${rowClass}">
+                 <td class="p-2 text-center cursor-pointer" onclick="mostrarImgDesc('${r.id}')">
+                     ${r.img ? `<img src="${r.img}" class="w-8 h-8 object-cover rounded shadow-sm mx-auto hover:opacity-80">` : `<div class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center mx-auto hover:bg-gray-300"><i data-lucide="camera" class="w-4 h-4 text-gray-500"></i></div>`}
+                 </td>
+                 <td class="p-3 font-bold text-gray-500 text-xs">${r.id}</td>
+                 <td class="p-3 font-bold text-slate-700 text-xs">${r.nombre}</td>
+                 <td class="p-3 text-gray-600 text-[10px] uppercase font-bold">${iconStr}${r.tipo}</td>
+                 <td class="p-3 text-gray-600 text-[11px]">${eq}</td>
+                 <td class="p-3 text-center"><span class="px-2 py-1 rounded font-bold ${r.stock<r.min?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${r.stock}</span></td>
+                 <td class="p-3 text-center text-gray-500">${r.min}</td>
+                 <td class="p-3 text-center"><button onclick="abrirCompraManualDesdeInv('${r.id}', '${r.equipoId}')" class="bg-purple-100 text-purple-700 hover:bg-purple-200 text-[10px] font-bold px-2 py-1 rounded">Comprar</button></td>
+                 <td class="p-3 text-center flex justify-center gap-2">
+                     <button onclick="editarElemento('inventario', '${r.id}')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                     <button onclick="eliminarElemento('inventario', '${r.id}')" class="text-red-600 hover:bg-red-100 p-1.5 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                 </td>
+                </tr>`; 
+            }); 
+            lucide.createIcons(); 
+        }
+ 
+        // --- CALENDARIO & COSTOS ---
+        function initCalendarioSelects() { const mesSel = document.getElementById('cal-month'), añoSel = document.getElementById('cal-year'), hoy = new Date(); mesSel.innerHTML = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => `<option value="${i}" ${hoy.getMonth()===i?'selected':''}>${m}</option>`).join(''); let años = ''; for(let i = 2024; i <= hoy.getFullYear()+2; i++) años += `<option value="${i}" ${hoy.getFullYear()===i?'selected':''}>${i}</option>`; añoSel.innerHTML = años; renderCalendario(); }
+        function renderCalendario() { const mes = parseInt(document.getElementById('cal-month')?.value || new Date().getMonth()), año = parseInt(document.getElementById('cal-year')?.value || new Date().getFullYear()); const grid = document.getElementById('cal-grid'); if(!grid) return; grid.innerHTML = ''; const primerDia = new Date(año, mes, 1).getDay(), diasEnMes = new Date(año, mes + 1, 0).getDate(); ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(d => grid.innerHTML += `<div class="bg-gray-200 py-1 text-center text-xs font-bold text-gray-600">${d}</div>`); for(let i=0; i<primerDia; i++) grid.innerHTML += `<div class="bg-gray-100/50 min-h-[80px]"></div>`; for(let i=1; i<=diasEnMes; i++) { const fStr = `${año}-${String(mes+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`; const otsD = db.ots.filter(o => o.fecha === fStr).map(o => `<div class="text-[9px] ${o.tipo==='Correctivo'?'bg-red-100 text-red-700':'bg-indigo-100 text-indigo-700'} font-bold px-1 py-0.5 rounded truncate mb-0.5" title="${o.desc}">${o.id}</div>`).join(''); const isHoy = new Date().toDateString() === new Date(año, mes, i).toDateString(); grid.innerHTML += `<div class="${isHoy?'bg-blue-50 border-blue-300 border-2':'bg-white'} min-h-[80px] p-1 flex flex-col border-b border-r border-gray-100"><span class="text-xs font-bold ${isHoy?'text-blue-700':'text-gray-500'} p-1">${i}</span><div class="flex-1 overflow-y-auto mt-1">${otsD}</div></div>`; } }
+ 
+        function renderCostos() {
+            // Valor actual de inventario
+          document.getElementById('costo-inv-total').innerText = `$${db.inventario.reduce((acc, r) => acc + (r.costo * r.stock), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`; 
+            
+            let valMo = 0; 
+            let valTotalGlobal = 0;
+            
+          const tbody = document.getElementById('costos-mo-tbody'); 
+         tbody.innerHTML = ''; 
+            
+          const yearFilter = document.getElementById('filter-costos-year')?.value;
+          const monthFilter = document.getElementById('filter-costos-month')?.value;
+          const dateFilter = yearFilter && monthFilter ? `${yearFilter}-${monthFilter}` : (yearFilter ? yearFilter : '');
+            
+            let otsFinalizadas = db.ots.filter(o => o.estado === 'finalizadas');
+            if(dateFilter) {
+                otsFinalizadas = otsFinalizadas.filter(o => o.fecha.startsWith(dateFilter));
+            }
+            
+            // Ordenamos más recientes primero
+            otsFinalizadas.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+ 
+         if(otsFinalizadas.length === 0) tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">No hay facturación/OTs finalizadas en el periodo.</td></tr>'; 
+            
+         otsFinalizadas.forEach(ot => {
+              const tech = db.personal.find(p => p.id === ot.tecnicoId); 
+                const equipo = db.equipos.find(e => e.id === ot.equipoId)?.nombre || 'Equipo X';
+                let costoMoFila = 0;
+               let costoRepuestos = 0;
+               let costoPrev = 0;
+ 
+                // M.O
+                if(tech && ot.tiempo) costoMoFila = tech.valor * ot.tiempo;
+                
+                // Repuestos
+                if(ot.repuestos) {
+                    costoRepuestos = ot.repuestos.reduce((acc, r) => acc + (r.cant * (r.costoUnitario || 0)), 0);
+                }
+ 
+                // Prev base
+                if(ot.tipo === 'Preventivo' && ot.planId) {
+                    const plan = db.planes_v2.find(p => p.id === ot.planId);
+                   if(plan && plan.costoPreventivo) costoPrev = plan.costoPreventivo;
+                }
+                
+                // Sumamos si por alguna razón no estaba guardado
+                const totalFila = ot.costoTotal ? ot.costoTotal : (costoMoFila + costoRepuestos + costoPrev);
+                
+                valMo += costoMoFila;
+                valTotalGlobal += totalFila;
+ 
+                tbody.innerHTML += `
+              <tr class="hover:bg-slate-50 transition">
+                  <td class="p-3 text-gray-500 text-xs">${ot.fecha}</td>
+                  <td class="p-3">
+                      <span class="font-bold text-slate-800 text-xs block">${ot.id}</span>
+                      <span class="text-[10px] ${ot.tipo==='Correctivo'?'text-red-500':'text-indigo-500'} font-bold">${ot.tipo}</span>
+                 </td>
+                 <td class="p-3 text-xs font-bold text-gray-600">${equipo}</td>
+                 <td class="p-3 text-xs flex items-center gap-1"><i data-lucide="user" class="w-3 h-3 text-gray-400"></i> ${tech ? tech.nombre : 'N/A'} <span class="text-[9px] text-gray-400 ml-1">(${ot.tiempo}h)</span></td>
+                 <td class="p-3 text-right text-orange-600 font-bold">$${costoRepuestos.toFixed(2)}</td>
+                 <td class="p-3 text-right text-green-600 font-bold">$${costoPrev.toFixed(2)}</td>
+                 <td class="p-3 text-right text-slate-600 font-bold">$${costoMoFila.toFixed(2)}</td>
+                 <td class="p-3 text-right font-black text-blue-700 bg-blue-50/50">$${totalFila.toFixed(2)}</td>
+             </tr>`; 
+            }); 
+            
+          document.getElementById('costo-mo-total').innerText = `$${valMo.toLocaleString('en-US', {minimumFractionDigits: 2})}`; 
+          document.getElementById('costo-global-total').innerText = `$${valTotalGlobal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+           lucide.createIcons({ root: document.getElementById('costos-mo-tbody') });
+        }
+ 
+        window.onload = function() { 
+            checkAuth();
+        }
+   </script>
+
+    <!-- ========================================== -->
+    <!-- MÓDULO DE FIREBASE (NUEVO)                 -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ⚠️ PEGA AQUÍ LA CONFIGURACIÓN DE TU PROYECTO FIREBASE ⚠️
+        const firebaseConfig = {
+  apiKey: "AIzaSyDJf-Px0OvrLEoVeUOInkDS8G8PqFleMik",
+  authDomain: "lacapanco-dbd57.firebaseapp.com",
+  projectId: "lacapanco-dbd57",
+  storageBucket: "lacapanco-dbd57.firebasestorage.app",
+  messagingSenderId: "95916292588",
+  appId: "1:95916292588:web:05e35f3e1442b1dc8328c9"
+};
+        const app = initializeApp(firebaseConfig);
+        const firestoreDB = getFirestore(app);
+        
+        // Referencia al documento único donde guardaremos toda tu base de datos
+        const dbRef = doc(firestoreDB, "lacapanco_data", "estado_actual");
+
+        // Esta función es llamada desde tu código antiguo cada vez que hace "saveDB()"
+        window.sincronizarConFirebase = async (datosApp) => {
+            try {
+                await setDoc(dbRef, datosApp);
+                console.log("✅ Datos guardados automáticamente en Firebase");
+            } catch (error) {
+                console.error("❌ Error al guardar en Firebase:", error);
+            }
+        };
+
+        // Función para cargar los datos de la nube al iniciar la página
+        async function cargarDatosIniciales() {
+            try {
+                const docSnap = await getDoc(dbRef);
+                if (docSnap.exists()) {
+                    console.log("📥 Base de datos descargada de Firebase.");
+                    window.actualizarDesdeFirebase(docSnap.data());
+                } else {
+                    console.log("⚠️ No hay datos previos en Firebase. Subiendo estado inicial...");
+                    // Si Firebase está vacío, sube la base de datos inicial (seed data)
+                    window.sincronizarConFirebase(window.appDB || JSON.parse(localStorage.getItem('lacapanco_db_v9_4')));
+                }
+            } catch (error) {
+                console.error("❌ Error al conectar con Firebase:", error);
+            }
+        }
+
+        // Iniciar la descarga de datos
+        cargarDatosIniciales();
+    </script>
+</body>
+</html>
